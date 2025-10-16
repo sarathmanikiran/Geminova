@@ -178,7 +178,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoa
   ];
 
   return (
-    <div className="p-4 bg-gray-900/80 backdrop-blur-sm border-t border-glass-border flex-shrink-0">
+    <div className="p-2 sm:p-4 bg-gray-900/80 backdrop-blur-sm border-t border-glass-border flex-shrink-0">
       <div className="bg-gray-800 rounded-xl focus-within:shadow-glow-primary transition-shadow duration-300 flex flex-col">
         {promptMode !== 'default' && (
           <div className="flex items-center gap-2 px-4 pt-2 text-sm text-purple-300 animate-fade-in-sm">
@@ -195,7 +195,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoa
                     <Icons.Plus className={`w-5 h-5 transition-transform duration-200 ${isOptionsOpen ? 'rotate-45' : ''}`} />
                 </button>
                 {isOptionsOpen && (
-                    <div className="absolute bottom-full mb-2 w-48 bg-gray-900/80 backdrop-blur-lg border border-glass-border p-2 rounded-lg animate-fade-in-sm">
+                    <div className="absolute bottom-full mb-2 w-52 bg-gray-900/80 backdrop-blur-lg border border-glass-border p-2 rounded-lg animate-fade-in-sm">
                         <ul className="flex flex-col gap-1">
                           {menuActions.map((action) => {
                             const IconComponent = action.icon;
@@ -219,8 +219,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoa
           </div>
           {imageFile && (
             <div className="relative ml-2 mb-2 self-start flex-shrink-0">
-              <img src={imageFile.dataUrl} alt="Preview" className="w-16 h-16 object-cover rounded-md"/>
-              <button onClick={removeImage} className="absolute -top-1.5 -right-1.5 bg-gray-900 rounded-full p-0.5 text-white hover:bg-red-500">
+              <img src={imageFile.dataUrl} alt="Preview" className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-md"/>
+              <button onClick={removeImage} className="absolute -top-2 -right-2 bg-gray-900 rounded-full p-1 text-white hover:bg-red-500">
                 <Icons.Close className="w-4 h-4" />
               </button>
             </div>
@@ -247,15 +247,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoa
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isListening ? "Listening..." : (imageFile ? "Describe the image or ask a question..." : "Type your message or /new_chat...")}
-                className="w-full bg-transparent resize-none outline-none p-2 max-h-40"
+                placeholder={isListening ? "Listening..." : (imageFile ? "Describe the image..." : "Type your message...")}
+                className="w-full bg-transparent resize-none outline-none p-2 max-h-32 sm:max-h-40"
                 rows={1}
                 disabled={isLoading}
                 maxLength={MAX_CHARS + 50}
               />
             )}
           </div>
-          <div className="flex items-center gap-1 self-end">
+          <div className="flex items-center gap-1 sm:gap-2 self-end">
             {hasRecognitionSupport && (
               <button
                 onClick={isListening ? stopListening : startListening}
@@ -266,7 +266,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoa
                 <Icons.Microphone className="w-5 h-5" />
               </button>
             )}
-            <button onClick={handleSend} disabled={isLoading || (!text.trim() && !imageFile) || text.length > MAX_CHARS} className={`p-2 bg-purple-600 rounded-full disabled:bg-gray-600 hover:bg-purple-700 transition-all ${!isLoading && (text.trim() || imageFile) && text.length <= MAX_CHARS ? 'animate-pulse-glow shadow-glow-primary' : ''}`}>
+            <button onClick={handleSend} disabled={isLoading || (!text.trim() && !imageFile) || text.length > MAX_CHARS} className={`p-3 bg-purple-600 rounded-full disabled:bg-gray-600 hover:bg-purple-700 transition-all ${!isLoading && (text.trim() || imageFile) && text.length <= MAX_CHARS ? 'animate-pulse-glow shadow-glow-primary' : ''}`}>
               {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Send className="w-5 h-5" />}
             </button>
           </div>

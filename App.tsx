@@ -5,15 +5,26 @@ import { LoginScreen } from './components/LoginScreen';
 import Sidebar from './components/chat/Sidebar';
 import { ChatView } from './components/chat/ChatView';
 import { Icons } from './components/Icons';
+import { isApiKeyConfigured } from './services/geminiService';
+import { ApiKeyErrorScreen } from './components/ApiKeyErrorScreen';
+import useMediaQuery from './hooks/useMediaQuery';
 
 function App() {
   const { user, signIn, signOut, loading, updateUser } = useAuth();
   const chatManager = useChatManager(user);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
+  // Check API key status on initial render
+  const [isApiReady] = useState(isApiKeyConfigured());
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(prev => !prev);
   };
+
+  if (!isApiReady) {
+    return <ApiKeyErrorScreen />;
+  }
 
   if (loading) {
     return (
@@ -37,14 +48,23 @@ function App() {
         onToggleSidebar={handleToggleSidebar}
         updateUser={updateUser}
       />
-      <main className="flex-1 h-full">
-        <ChatView 
-          user={user}
-          chatManager={chatManager}
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={handleToggleSidebar}
-        />
-      </main>
+      <div className="relative flex-1 h-full">
+        <main className="h-full w-full">
+          <ChatView 
+            user={user}
+            chatManager={chatManager}
+            isSidebarOpen={isSidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        </main>
+        {isSidebarOpen && isMobile && (
+          <div
+            className="absolute inset-0 bg-black/60 z-10 animate-fade-in-sm"
+            onClick={handleToggleSidebar}
+            aria-hidden="true"
+          />
+        )}
+      </div>
     </div>
   );
 }

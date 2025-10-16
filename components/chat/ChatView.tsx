@@ -7,6 +7,9 @@ import ChatHeader from './ChatHeader';
 import WelcomeScreen from './WelcomeScreen';
 import { ImageGenerationModal } from '../image/ImageGenerationModal';
 import { ImageEditModal } from '../image/ImageEditModal';
+import { Icons } from '../Icons';
+import useMediaQuery from '../../hooks/useMediaQuery';
+import { InitialWelcomeMessage } from './InitialWelcomeMessage';
 
 interface ChatViewProps {
   user: User;
@@ -31,6 +34,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
   
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isImageEditModalOpen, setIsImageEditModalOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   
   const handleImageGenerated = (imageDataUrl: string, prompt: string) => {
     addImageToChat(imageDataUrl, prompt);
@@ -42,6 +46,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
     setIsImageEditModalOpen(false);
   };
 
+  const showWelcomeScreen = messages.length === 0 && currentChat && !isMobile;
+  const showInitialWelcome = messages.length === 0 && currentChat && isMobile;
+
+
   return (
     <div className="flex flex-col h-full w-full bg-gray-900 animate-fade-in">
       <ChatHeader
@@ -51,15 +59,28 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
         setChats={setChats}
       />
       <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 && currentChat ? (
+        {showWelcomeScreen ? (
           <WelcomeScreen 
             onStartTask={(prompt, useSearch) => sendMessage(prompt, useSearch)} 
             onGenerateImageClick={() => setIsImageModalOpen(true)}
           />
+        ) : showInitialWelcome ? (
+          <InitialWelcomeMessage />
         ) : (
           <MessageList messages={messages} user={user} sendMessage={sendMessage} />
         )}
       </div>
+
+       {/* New Chat FAB for Mobile */}
+       <button
+        onClick={() => createNewChat()}
+        className="md:hidden fixed bottom-24 right-4 z-30 p-4 bg-primary rounded-full shadow-lg hover:bg-primary-hover transition-transform transform hover:scale-110 active:scale-100 shadow-glow-primary animate-float-in"
+        aria-label="Create a new chat"
+        title="New Chat"
+      >
+        <Icons.Plus className="w-6 h-6 text-white" />
+      </button>
+
       <ChatInput
         onSendMessage={sendMessage}
         onSendImage={sendImage}

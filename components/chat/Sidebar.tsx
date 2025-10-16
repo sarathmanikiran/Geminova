@@ -65,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
         </div>
 
         <div className="p-2 space-y-1">
-            <button onClick={createNewChat} className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-white/10 text-sm transition-colors">
+            <button onClick={createNewChat} className="hidden md:flex items-center gap-2 w-full p-2 rounded-md hover:bg-white/10 text-sm transition-colors">
                 <Icons.Plus className="w-5 h-5" />
                 New Chat
             </button>

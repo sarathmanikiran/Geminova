@@ -124,7 +124,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, sendMes
     <div className={`flex items-start gap-4 ${isUser ? 'flex-row-reverse' : ''} ${!isUser ? 'animate-float-in' : ''}`}>
       {!isUser && <Avatar name="Geminova" />}
       {isUser && <Avatar name={user.name} picture={user.profilePicture} />}
-      <div className={`flex flex-col max-w-lg md:max-w-2xl ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col max-w-[85%] sm:max-w-lg md:max-w-2xl ${isUser ? 'items-end' : 'items-start'}`}>
         <div className={`px-4 py-3 rounded-2xl transition-shadow ${isUser ? 'bg-blue-600 rounded-br-none shadow-glow-user' : 'bg-gray-700 rounded-bl-none shadow-glow-assistant'}`}>
           {renderContent()}
         </div>

@@ -16,7 +16,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ currentChat, onToggleSidebar, i
       <div className="flex items-center gap-4">
         {!isSidebarOpen && (
           <button onClick={onToggleSidebar} className="p-1 rounded-md hover:bg-white/10 md:hidden">
-            <Icons.Plus className="w-6 h-6 rotate-45" />
+            <Icons.Menu className="w-6 h-6" />
           </button>
         )}
         <h2 className="text-lg font-semibold truncate">{currentChat?.title || 'Geminova'}</h2>

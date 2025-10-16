@@ -1,14 +1,18 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { Message, AIPersonality, ChatSession } from '../types';
 
-let ai: GoogleGenAI;
+let ai: GoogleGenAI | undefined;
 
 try {
   ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 } catch (error) {
   console.error("Failed to initialize GoogleGenAI. API key might be missing.", error);
-  // The app will show an error message if the API key is not configured.
+  ai = undefined;
 }
+
+export const isApiKeyConfigured = (): boolean => {
+  return !!ai;
+};
 
 const getSystemInstruction = (personality: AIPersonality): string => {
   const basePrompt = `You are Geminova, a futuristic, multimodal AI companion. You are integrated into a sleek, dark-themed web application with glassmorphism effects. Your responses should be intelligent, concise, and reflect a next-gen AI. After your main response, suggest 2-3 brief, relevant follow-up questions or actions the user might take. Format them like this: [SUGGESTION]A short suggestion here.[/SUGGESTION]. Do not add suggestions if the user's prompt is very simple, like 'hello'.`;
