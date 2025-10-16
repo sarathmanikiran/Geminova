@@ -1,0 +1,8 @@
+{
+  "name": "Geminova",
+  "description": "A futuristic, multimodal AI assistant powered by Google Gemini. It listens, speaks, draws, edits, codes, and reasons with you in real time within a beautifully designed, high-performance web experience.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
