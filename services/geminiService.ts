@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
-import { Message, AIPersonality, ChatSession } from '../types';
+import { Message, AIPersonality, ChatSession, GroundingChunk } from '../types';
 
 let ai: GoogleGenAI | undefined;
 
@@ -19,12 +20,12 @@ const getSystemInstruction = (personality: AIPersonality): string => {
   
   switch (personality) {
     case 'professional':
-      return `${basePrompt} Your current personality is Professional. Maintain a formal, precise, and highly knowledgeable tone. Prioritize accuracy and clarity in all communications.`;
+      return `${basePrompt} IMPORTANT: You MUST adopt a Professional personality. Maintain a formal, precise, and highly knowledgeable tone. Prioritize accuracy and clarity. Do not use emojis.`;
     case 'humorous':
-      return `${basePrompt} Your current personality is Humorous. Be witty, clever, and use tasteful humor. Engage the user with lighthearted jokes and funny observations. Use emojis sparingly.`;
+      return `${basePrompt} IMPORTANT: You MUST adopt a Humorous personality. Be witty, clever, and use tasteful humor. Tell jokes and make funny observations. Use emojis sparingly.`;
     case 'friendly':
     default:
-      return `${basePrompt} Your current personality is Friendly. Be warm, approachable, and empathetic. Use emojis to convey emotion naturally. Make the user feel like they're talking to a helpful friend.`;
+      return `${basePrompt} IMPORTANT: You MUST adopt a Friendly personality. Be warm, approachable, and empathetic. Use emojis to convey emotion naturally. Behave like a helpful friend.`;
   }
 };
 
@@ -102,7 +103,7 @@ export const editImage = async (prompt: string, imageBase64: string, mimeType: s
             ],
         },
         config: {
-// Fix: The responseModalities array must contain exactly one modality.
+          // Fix: The responseModalities array for image editing must contain exactly one modality, which is Modality.IMAGE.
           responseModalities: [Modality.IMAGE],
         },
     });
@@ -140,7 +141,8 @@ export const textToSpeech = async (text: string): Promise<string | null> => {
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data ?? null;
 };
-// Fix: Add missing fetchSuggestionsForAction function.
+
+// Fix: Add missing fetchSuggestionsForAction function to generate dynamic suggestions for UI actions.
 export const fetchSuggestionsForAction = async (actionLabel: string): Promise<string[]> => {
     if (!ai) return [];
     try {

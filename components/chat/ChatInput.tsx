@@ -1,13 +1,12 @@
-import React, { useState, useRef, ChangeEvent, KeyboardEvent, useEffect, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Icons } from '../Icons';
-import { debounce } from '../../utils';
+
+
+import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { Icons } from '../Icons';
 
 interface ChatInputProps {
-  onSendMessage: (message: string, useGoogleSearch?: boolean) => void;
-  onSendImage: (prompt: string, image: { dataUrl: string; file: File }) => void;
+  onSendMessage: (message: string, useSearch?: boolean) => void;
+  onSendImage?: (imageBase64: string, mimeType: string) => void;
   isLoading: boolean;
   currentChatId: string | null;
   createNewChat: () => void;
@@ -15,273 +14,176 @@ interface ChatInputProps {
   onEditImageClick: () => void;
 }
 
-const MAX_CHARS = 2000;
+const ChatInput: React.FC<ChatInputProps> = ({
+  onSendMessage,
+  isLoading,
+  currentChatId,
+  createNewChat,
+  onGenerateImageClick,
+  onEditImageClick
+}) => {
+  const [input, setInput] = useState('');
+  const { isListening, transcript, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition();
+  const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [useSearchForNextMessage, setUseSearchForNextMessage] = useState(false);
 
-type PromptMode = 'default' | 'research' | 'study';
-
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendImage, isLoading, currentChatId, createNewChat, onGenerateImageClick, onEditImageClick }) => {
-  const [text, setText] = useState('');
-  const [imageFile, setImageFile] = useState<{dataUrl: string; file: File} | null>(null);
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-  const [promptMode, setPromptMode] = useState<PromptMode>('default');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const optionsMenuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    hasRecognitionSupport
-  } = useSpeechRecognition();
-
-  useEffect(() => {
-    if (transcript) {
-      setText(prev => promptMode !== 'default' ? prev + transcript : transcript);
-    }
-  }, [transcript, promptMode]);
-
-  const getDraftKey = (chatId: string) => `geminova_draft_${chatId}`;
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const saveDraft = useCallback(
-    debounce((chatId: string, content: string, mode: PromptMode) => {
-      if (chatId && mode === 'default') { // Only save drafts for default mode
-        if (content.trim()) {
-          localStorage.setItem(getDraftKey(chatId), content);
-        } else {
-          localStorage.removeItem(getDraftKey(chatId));
-        }
-      }
-    }, 500),
-    []
-  );
-
-  useEffect(() => {
-    if (currentChatId && !isListening) {
-      saveDraft(currentChatId, text, promptMode);
-    }
-  }, [text, currentChatId, saveDraft, isListening, promptMode]);
-  
-  // Close options menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target as Node)) {
-        setIsOptionsOpen(false);
+      if (
+        menuRef.current && !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsAttachmentMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
-    if (!currentChatId) {
-      setText('');
-      setPromptMode('default');
-      return;
+    if (transcript) {
+      setInput(transcript);
     }
-    const savedDraft = localStorage.getItem(getDraftKey(currentChatId));
-    setText(savedDraft || '');
-    setPromptMode('default');
-    setIsPreviewing(false);
-  }, [currentChatId]);
+  }, [transcript]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
 
   const handleSend = () => {
-    const trimmedText = text.trim();
-    if ((!trimmedText && !imageFile) || text.length > MAX_CHARS) return;
-
-    if (trimmedText.startsWith('/') && promptMode === 'default') {
-      if (trimmedText === '/new_chat') {
+    if (input.trim() && !isLoading) {
+      if (!currentChatId) {
         createNewChat();
-        setText('');
-        setIsPreviewing(false);
-        if (currentChatId) localStorage.removeItem(getDraftKey(currentChatId));
-        return;
       }
+      onSendMessage(input, useSearchForNextMessage);
+      setInput('');
+      setUseSearchForNextMessage(false);
     }
-    
-    if (imageFile) {
-        onSendImage(trimmedText || 'What is in this image?', imageFile);
-    } else {
-        const useSearch = promptMode === 'research';
-        onSendMessage(trimmedText, useSearch);
-    }
-    
-    if (currentChatId) {
-        localStorage.removeItem(getDraftKey(currentChatId));
-    }
-
-    setText('');
-    setImageFile(null);
-    setIsPreviewing(false);
-    setPromptMode('default');
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
-  
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-  
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageFile({ dataUrl: event.target?.result as string, file });
-      };
-      reader.readAsDataURL(file);
+
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
-
-  const removeImage = () => {
-    setImageFile(null);
-    if(fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-      }, 0);
-    }
-  }, [text, currentChatId, isPreviewing]);
-
-  const chars = text.length;
-  const charColor = chars > MAX_CHARS ? 'text-red-500 font-bold' : chars > MAX_CHARS * 0.9 ? 'text-yellow-400' : 'text-gray-400';
   
-  const handleTaskClick = (mode: PromptMode, initialText: string) => {
-    setPromptMode(mode);
-    setText(initialText);
+  const handleGenerateImage = () => {
+    onGenerateImageClick();
+    setIsAttachmentMenuOpen(false);
+  };
+  
+  const handleEditImage = () => {
+    onEditImageClick();
+    setIsAttachmentMenuOpen(false);
+  };
+  
+  const setInputAction = (prompt: string, useSearch = false) => {
+    setInput(prompt);
+    setUseSearchForNextMessage(useSearch);
+    setIsAttachmentMenuOpen(false);
     textareaRef.current?.focus();
-    setIsOptionsOpen(false);
-  };
-  
-  const cancelPromptMode = () => {
-    setPromptMode('default');
-    setText('');
   }
 
-  const menuActions = [
-    { label: 'Generate Image', icon: Icons.Sparkles, handler: () => { onGenerateImageClick(); setIsOptionsOpen(false); } },
-    { label: 'Edit Image', icon: Icons.Wand, handler: () => { onEditImageClick(); setIsOptionsOpen(false); } },
-    { label: 'Upload Image', icon: Icons.Image, handler: () => { fileInputRef.current?.click(); setIsOptionsOpen(false); } },
-    { label: 'Deep Research', icon: Icons.Search, handler: () => handleTaskClick('research', 'Deep research on: ') },
-    { label: 'Student Study', icon: Icons.Book, handler: () => handleTaskClick('study', 'Help me study: ') },
-  ];
+  const handleDeepResearch = () => {
+    setInputAction("Research the topic: ", true);
+  };
 
+  const handleThinkFast = () => {
+    setInputAction("Let's have a brainstorming session. My topic is ");
+  };
+
+  const handleStudyHelper = () => {
+    setInputAction("Help me study the topic of ");
+  };
+  
   return (
-    <div className="p-2 sm:p-4 bg-gray-900/80 backdrop-blur-sm border-t border-glass-border flex-shrink-0">
-      <div className="bg-gray-800 rounded-xl focus-within:shadow-glow-primary transition-shadow duration-300 flex flex-col">
-        {promptMode !== 'default' && (
-          <div className="flex items-center gap-2 px-4 pt-2 text-sm text-purple-300 animate-fade-in-sm">
-            {promptMode === 'research' && <Icons.Search className="w-4 h-4" />}
-            {promptMode === 'study' && <Icons.Book className="w-4 h-4" />}
-            <span className="font-semibold capitalize">{promptMode} Mode</span>
-            <button onClick={cancelPromptMode} className="ml-auto text-xs text-gray-400 hover:text-white hover:underline">(cancel)</button>
-          </div>
-        )}
-        <div className="p-2 flex items-end">
-          <div className="flex items-center gap-1 self-end">
-             <div className="relative" ref={optionsMenuRef}>
-                <button onClick={() => setIsOptionsOpen(p => !p)} className="p-2 rounded-full hover:bg-white/10 transition-shadow hover:shadow-glow-accent" title="More options">
-                    <Icons.Plus className={`w-5 h-5 transition-transform duration-200 ${isOptionsOpen ? 'rotate-45' : ''}`} />
-                </button>
-                {isOptionsOpen && (
-                    <div className="absolute bottom-full mb-2 w-52 bg-gray-900/80 backdrop-blur-lg border border-glass-border p-2 rounded-lg animate-fade-in-sm">
-                        <ul className="flex flex-col gap-1">
-                          {menuActions.map((action) => {
-                            const IconComponent = action.icon;
-                            return (
-                              <li key={action.label}>
-                                <button
-                                  onClick={action.handler}
-                                  className="w-full flex items-center gap-3 p-2 rounded-md text-sm hover:bg-white/10 transition-colors text-left"
-                                >
-                                  <IconComponent className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                                  <span>{action.label}</span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden"/>
-                    </div>
-                )}
-            </div>
-          </div>
-          {imageFile && (
-            <div className="relative ml-2 mb-2 self-start flex-shrink-0">
-              <img src={imageFile.dataUrl} alt="Preview" className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-md"/>
-              <button onClick={removeImage} className="absolute -top-2 -right-2 bg-gray-900 rounded-full p-1 text-white hover:bg-red-500">
-                <Icons.Close className="w-4 h-4" />
+    <div className="px-4 pb-4 bg-gray-900 border-t border-glass-border">
+      <div className={`relative flex items-end gap-2 p-2 bg-gray-800/50 rounded-lg border transition-colors ${isLoading ? 'border-purple-500 animate-pulse' : 'border-glass-border focus-within:border-purple-500'}`}>
+        
+        <div className="relative flex-shrink-0 self-end mb-1">
+          {isAttachmentMenuOpen && (
+            <div ref={menuRef} className="absolute bottom-full mb-2 w-56 bg-gray-800 rounded-lg shadow-xl border border-glass-border z-10 animate-menu-in p-2 space-y-1">
+              <button 
+                onClick={handleGenerateImage} 
+                className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]"
+              >
+                <Icons.Sparkles className="w-5 h-5 text-purple-400" />
+                <span>Generate Image</span>
+              </button>
+              <button 
+                onClick={handleEditImage} 
+                className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]"
+              >
+                <Icons.Wand className="w-5 h-5 text-indigo-400" />
+                <span>Edit / Upload Image</span>
+              </button>
+              <div className="border-t border-glass-border my-1"></div>
+               <button onClick={handleDeepResearch} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]">
+                  <Icons.Search className="w-5 h-5 text-blue-400" />
+                  <span>Deep Research</span>
+              </button>
+              <button onClick={handleThinkFast} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]">
+                  <Icons.Brain className="w-5 h-5 text-pink-400" />
+                  <span>Think Fast</span>
+              </button>
+              <button onClick={handleStudyHelper} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]">
+                  <Icons.Book className="w-5 h-5 text-green-400" />
+                  <span>Student Study Helper</span>
               </button>
             </div>
           )}
-          <div className="w-full">
-            {isPreviewing ? (
-              <div className="p-2 max-h-40 min-h-[44px] overflow-y-auto w-full text-sm">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                    ul: ({...props}) => <ul className="list-disc list-inside mb-2" {...props} />,
-                    ol: ({...props}) => <ol className="list-decimal list-inside mb-2" {...props} />,
-                    code: ({inline, ...props}) => <code className={`bg-gray-700 rounded-sm px-1 text-sm font-mono ${!inline ? "block p-2 whitespace-pre-wrap" : ""}`} {...props} />,
-                    blockquote: ({...props}) => <blockquote className="border-l-4 border-gray-500 pl-4 italic my-2" {...props} />,
-                  }}
-                >
-                  {text || '*Nothing to preview...*'}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isListening ? "Listening..." : (imageFile ? "Describe the image..." : "Type your message...")}
-                className="w-full bg-transparent resize-none outline-none p-2 max-h-32 sm:max-h-40"
-                rows={1}
-                disabled={isLoading}
-                maxLength={MAX_CHARS + 50}
-              />
-            )}
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 self-end">
-            {hasRecognitionSupport && (
-              <button
-                onClick={isListening ? stopListening : startListening}
-                disabled={isLoading}
-                className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-600 shadow-glow-error animate-pulse' : 'hover:bg-white/10 hover:shadow-glow-accent'}`}
-                title={isListening ? 'Stop recording' : 'Use voice input'}
-              >
-                <Icons.Microphone className="w-5 h-5" />
-              </button>
-            )}
-            <button onClick={handleSend} disabled={isLoading || (!text.trim() && !imageFile) || text.length > MAX_CHARS} className={`p-3 bg-purple-600 rounded-full disabled:bg-gray-600 hover:bg-purple-700 transition-all ${!isLoading && (text.trim() || imageFile) && text.length <= MAX_CHARS ? 'animate-pulse-glow shadow-glow-primary' : ''}`}>
-              {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Send className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-        <div className="flex justify-end items-center px-4 pb-2 -mt-1 gap-4">
           <button 
-            onClick={() => setIsPreviewing(!isPreviewing)}
-            className={`p-1 rounded-md text-gray-400 hover:text-white transition-colors ${isPreviewing ? 'bg-purple-600/50 text-white' : 'hover:bg-white/10'}`}
-            title={isPreviewing ? "Edit message" : "Preview Markdown"}
+            ref={buttonRef}
+            onClick={() => setIsAttachmentMenuOpen(prev => !prev)} 
+            className="p-2 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 hover:shadow-glow-accent active:scale-95" 
+            title="Attach or generate"
           >
-            <Icons.Eye className="w-5 h-5" />
+            <Icons.Plus className="w-5 h-5" />
           </button>
-          <span className={`text-xs font-mono transition-colors ${charColor}`}>
-            {chars}/{MAX_CHARS}
-          </span>
+        </div>
+
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask Geminova anything..."
+          className="w-full bg-transparent resize-none border-none focus:ring-0 text-white placeholder-gray-500 max-h-48 py-2.5"
+          rows={1}
+          disabled={isLoading}
+        />
+        <div className="flex-shrink-0 flex items-center gap-1 self-end mb-1">
+          {hasRecognitionSupport && (
+            <button onClick={handleMicClick} className={`p-2 rounded-full transition-all transform hover:scale-110 ${isListening ? 'bg-red-500/50 text-red-300 animate-pulse' : 'hover:bg-white/10'} active:scale-95`} title="Use Microphone">
+              <Icons.Microphone className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className="p-2 rounded-full bg-primary hover:bg-primary-hover disabled:bg-gray-600 disabled:cursor-not-allowed transition-all transform hover:scale-110 active:scale-95"
+            title="Send Message"
+          >
+            {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Send className="w-5 h-5" />}
+          </button>
         </div>
       </div>
     </div>

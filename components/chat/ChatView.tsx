@@ -71,16 +71,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
         )}
       </div>
 
-       {/* New Chat FAB for Mobile */}
-       <button
-        onClick={() => createNewChat()}
-        className="md:hidden fixed bottom-24 right-4 z-30 p-4 bg-primary rounded-full shadow-lg hover:bg-primary-hover transition-transform transform hover:scale-110 active:scale-100 shadow-glow-primary animate-float-in"
-        aria-label="Create a new chat"
-        title="New Chat"
-      >
-        <Icons.Plus className="w-6 h-6 text-white" />
-      </button>
-
       <ChatInput
         onSendMessage={sendMessage}
         onSendImage={sendImage}

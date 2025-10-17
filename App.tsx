@@ -10,7 +10,7 @@ import { ApiKeyErrorScreen } from './components/ApiKeyErrorScreen';
 import useMediaQuery from './hooks/useMediaQuery';
 
 function App() {
-  const { user, signIn, signOut, loading, updateUser } = useAuth();
+  const { user, signIn, signUp, signOut, loading, updateUser } = useAuth();
   const chatManager = useChatManager(user);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -35,7 +35,7 @@ function App() {
   }
 
   if (!user) {
-    return <LoginScreen onSignIn={signIn} theme="dark" />;
+    return <LoginScreen onSignIn={signIn} onSignUp={signUp} />;
   }
 
   return (

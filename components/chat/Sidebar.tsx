@@ -5,6 +5,7 @@ import useChatManager from '../../hooks/useChatManager';
 import { getInitials } from '../../utils';
 import ConfirmDialog from '../ConfirmDialog';
 import ProfileModal from '../profile/ProfileModal';
+import { useToast } from './VoiceMode';
 
 interface SidebarProps {
   user: User;
@@ -21,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
   const [chatToDelete, setChatToDelete] = useState<ChatSession | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+  const { showToast } = useToast();
 
   const handleDeleteClick = (e: React.MouseEvent, chat: ChatSession) => {
     e.stopPropagation();
@@ -31,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
   const confirmDelete = () => {
     if (chatToDelete) {
       deleteChat(chatToDelete.id);
+      showToast(`Chat "${chatToDelete.title}" deleted`, 'success');
     }
     setChatToDelete(null);
     setIsDeleteDialogOpen(false);
@@ -38,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
   
   const confirmClearAll = () => {
     clearAllChats();
+    showToast('All chats have been cleared.', 'success');
     setIsClearAllDialogOpen(false);
   };
 
@@ -59,13 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
             <Icons.Logo className="w-8 h-8" />
             <span className="font-bold text-lg">Geminova</span>
           </div>
-          <button onClick={onToggleSidebar} className="p-1 rounded-md hover:bg-white/10 md:hidden">
+          <button onClick={onToggleSidebar} className="p-1 rounded-md hover:bg-white/10 md:hidden transition-all transform hover:scale-110 active:scale-95">
              <Icons.Close className="w-6 h-6" />
           </button>
         </div>
 
         <div className="p-2 space-y-1">
-            <button onClick={createNewChat} className="hidden md:flex items-center gap-2 w-full p-2 rounded-md hover:bg-white/10 text-sm transition-colors">
+            <button onClick={createNewChat} className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-white/10 text-sm transition-all transform hover:scale-[1.02] active:scale-95">
                 <Icons.Plus className="w-5 h-5" />
                 New Chat
             </button>
@@ -76,14 +80,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
             <button
               key={chat.id}
               onClick={() => selectChat(chat.id)}
-              className={`w-full text-left p-2 rounded-md text-sm truncate flex justify-between items-center group ${
+              className={`w-full text-left p-2 rounded-md text-sm truncate flex justify-between items-center group transition-all transform hover:scale-[1.01] active:scale-95 ${
                 currentChat?.id === chat.id ? 'bg-purple-600/50 shadow-glow-primary' : 'hover:bg-white/10'
               }`}
             >
               <span className="flex-1 truncate pr-2">{chat.title}</span>
               <span 
                 onClick={(e) => handleDeleteClick(e, chat)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400"
+                className="opacity-0 group-hover:opacity-100 transition-all transform hover:scale-125 text-gray-400 hover:text-red-400 p-1"
               >
                   <Icons.Trash className="w-4 h-4" />
               </span>
@@ -94,17 +98,17 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
         <div className="p-4 border-t border-glass-border mt-auto space-y-2">
           <button 
             onClick={() => setIsClearAllDialogOpen(true)} 
-            className="w-full flex items-center gap-2 p-2 rounded-md text-sm text-red-400 hover:bg-red-500/20 transition-colors"
+            className="w-full flex items-center gap-2 p-2 rounded-md text-sm text-red-400 hover:bg-red-500/20 transition-all transform hover:scale-[1.02] active:scale-95"
           >
               <Icons.Trash className="w-5 h-5" />
               Clear History
           </button>
           <div className="flex items-center justify-between">
-              <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-2 truncate p-1 rounded-md hover:bg-white/10 transition-colors">
+              <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-2 truncate p-1 rounded-md hover:bg-white/10 transition-all transform hover:scale-[1.02] active:scale-95">
                 <UserAvatar />
                 <span className="font-semibold text-sm truncate">{user.name}</span>
               </button>
-              <button onClick={signOut} title="Sign Out" className="p-2 rounded-full hover:bg-white/10 transition-colors">
+              <button onClick={signOut} title="Sign Out" className="p-2 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95">
                   <Icons.Logout className="w-5 h-5" />
               </button>
           </div>

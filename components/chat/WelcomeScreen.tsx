@@ -27,7 +27,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask, onGenerateIm
             <button
               key={task.title}
               onClick={() => task.isGenerator ? onGenerateImageClick() : onStartTask(task.prompt, task.useSearch)}
-              className="p-4 bg-gray-800/50 border border-glass-border rounded-lg text-left hover:bg-gray-700/70 transition-all duration-300 hover:shadow-glow-primary flex flex-col items-start"
+              className="p-4 bg-gray-800/50 border border-glass-border rounded-lg text-left hover:bg-gray-700/70 transition-all duration-300 hover:shadow-glow-primary flex flex-col items-start transform hover:scale-[1.02] active:scale-[0.98]"
             >
               <Icon className="w-6 h-6 mb-3 text-primary" />
               <h3 className="font-semibold text-white mb-1">{task.title}</h3>

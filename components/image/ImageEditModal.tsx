@@ -78,7 +78,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
   };
 
   const ImagePlaceholder = ({ onFileChange }: { onFileChange: (e: ChangeEvent<HTMLInputElement>) => void }) => (
-    <div className="w-full h-full border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-center p-4">
+    <div className="w-full h-full border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-center p-4 transition-colors group-hover:border-purple-500">
       <Icons.Image className="w-16 h-16 text-gray-500 mb-4" />
       <p className="text-gray-400 mb-2">Drag & drop or click to upload</p>
       <input type="file" onChange={onFileChange} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
@@ -87,10 +87,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4" onClick={handleClose}>
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl border border-glass-border flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl border border-glass-border flex flex-col max-h-[90vh] animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-glass-border flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-semibold">Image Edit Studio</h2>
-          <button onClick={handleClose} className="p-1 rounded-full hover:bg-white/10">
+          <button onClick={handleClose} className="p-1 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95">
             <Icons.Close className="w-6 h-6" />
           </button>
         </div>
@@ -98,7 +98,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
         <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
           {/* Left Panel: Original Image & Prompt */}
           <div className="flex flex-col gap-4">
-            <div className="relative w-full h-64 bg-gray-900/50 rounded-lg flex items-center justify-center">
+            <div className="relative w-full h-64 bg-gray-900/50 rounded-lg flex items-center justify-center group">
               {originalImage ? (
                 <img src={originalImage.dataUrl} alt="Original" className="max-w-full max-h-full rounded-lg object-contain" />
               ) : (
@@ -119,7 +119,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
              <button
                 onClick={handleEdit}
                 disabled={isLoading || !prompt.trim() || !originalImage}
-                className="w-full flex items-center justify-center gap-2 mt-auto p-3 bg-primary hover:bg-primary-hover rounded-lg font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 mt-auto p-3 bg-primary hover:bg-primary-hover rounded-lg font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95"
               >
                 {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Wand className="w-5 h-5" />}
                 <span>{isLoading ? 'Editing...' : 'Edit Image'}</span>
@@ -160,8 +160,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
         </div>
 
         <div className="bg-gray-900/50 px-6 py-4 flex justify-end gap-3 rounded-b-lg flex-shrink-0">
-          <button onClick={handleClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">Cancel</button>
-          <button onClick={handleAddToChat} disabled={!editedImage} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
+          <button onClick={handleClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-all transform hover:scale-[1.02] active:scale-95">Cancel</button>
+          <button onClick={handleAddToChat} disabled={!editedImage} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
             Add to Chat
           </button>
         </div>

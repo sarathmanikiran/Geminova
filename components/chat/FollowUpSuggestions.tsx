@@ -13,7 +13,7 @@ export const FollowUpSuggestions: React.FC<FollowUpSuggestionsProps> = ({ sugges
         <button
           key={index}
           onClick={() => onSuggestionClick(suggestion)}
-          className="px-3 py-1.5 bg-gray-800/60 border border-glass-border rounded-full hover:bg-gray-700/80 transition-all text-sm text-gray-300 hover:text-white hover:shadow-glow-accent flex items-center gap-2"
+          className="px-3 py-1.5 bg-gray-800/60 border border-glass-border rounded-full hover:bg-gray-700/80 transition-all text-sm text-gray-300 hover:text-white hover:shadow-glow-accent flex items-center gap-2 transform hover:scale-105 active:scale-95"
         >
           <Icons.Sparkles className="w-4 h-4 text-purple-400" />
           {suggestion}

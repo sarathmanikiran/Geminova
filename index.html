@@ -25,6 +25,16 @@
       from, to { color: transparent }
       50% { color: inherit }
     }
+    @keyframes toast-in {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
   </style>
 
   <script>
@@ -73,6 +83,9 @@
             'aurora': 'aurora 20s linear infinite',
             'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
             'blink': 'blink 1s step-end infinite',
+            'toast-in': 'toast-in 0.3s ease-out forwards',
+            'menu-in': 'menu-in 0.2s ease-out forwards',
+            'modal-in': 'modal-in 0.3s ease-out forwards',
           },
           keyframes: {
             fadeIn: {
@@ -103,7 +116,19 @@
             blink: {
               'from, to': { color: 'transparent' },
               '50%': { color: 'inherit' },
-            }
+            },
+            'toast-in': {
+              '0%': { opacity: '0', transform: 'translateY(-20px) scale(0.9)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+            },
+            'menu-in': {
+              '0%': { opacity: '0', transform: 'translateY(10px) scale(0.95)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+            },
+            'modal-in': {
+              '0%': { opacity: '0', transform: 'scale(0.95)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
           }
         },
       },
@@ -111,19 +136,21 @@
   </script>
 
   <script type="importmap">
-  {
-    "imports": {
-      "react": "https://aistudiocdn.com/react@^19.2.0",
-      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-      "react/": "https://aistudiocdn.com/react@^19.2.0/",
-      "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
-      "react-webcam": "https://aistudiocdn.com/react-webcam@^7.2.0",
-      "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
-      "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.1",
-      "uuid": "https://aistudiocdn.com/uuid@^13.0.0"
-    }
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
+    "react-webcam": "https://aistudiocdn.com/react-webcam@^7.2.0",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.1",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^15.6.6/",
+    "react-syntax-highlighter": "https://aistudiocdn.com/react-syntax-highlighter@^15.6.6"
   }
-  </script>
+}
+</script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

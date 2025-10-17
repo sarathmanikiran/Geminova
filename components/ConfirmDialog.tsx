@@ -31,7 +31,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm border border-glass-border" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm border border-glass-border animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -46,13 +46,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="bg-gray-900/50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-all transform hover:scale-[1.02] active:scale-95"
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors shadow-glow-error"
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-all shadow-glow-error transform hover:scale-[1.02] active:scale-95"
           >
             {confirmText}
           </button>

@@ -70,10 +70,10 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl border border-glass-border flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl border border-glass-border flex flex-col max-h-[90vh] animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-glass-border flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-semibold">Generate Image</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95">
             <Icons.Close className="w-6 h-6" />
           </button>
         </div>
@@ -97,7 +97,7 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
               <div className="flex gap-2">
                 {aspectRatios.map(({ label, value }) => (
                   <button key={value} onClick={() => setAspectRatio(value)} disabled={isLoading}
-                          className={`px-4 py-2 rounded-md text-sm transition-all ${aspectRatio === value ? 'bg-purple-600 text-white shadow-glow-primary' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                          className={`px-4 py-2 rounded-md text-sm transition-all transform hover:scale-105 active:scale-95 ${aspectRatio === value ? 'bg-purple-600 text-white shadow-glow-primary' : 'bg-gray-700 hover:bg-gray-600'}`}>
                     {label}
                   </button>
                 ))}
@@ -106,7 +106,7 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
             <button
               onClick={handleGenerate}
               disabled={isLoading || !prompt.trim()}
-              className="w-full flex items-center justify-center gap-2 mt-auto p-3 bg-primary hover:bg-primary-hover rounded-lg font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 mt-auto p-3 bg-primary hover:bg-primary-hover rounded-lg font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95"
             >
               {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Sparkles className="w-5 h-5" />}
               <span>{isLoading ? 'Generating...' : 'Generate'}</span>
@@ -144,8 +144,8 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
         </div>
 
         <div className="bg-gray-900/50 px-6 py-4 flex justify-end gap-3 rounded-b-lg flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">Cancel</button>
-          <button onClick={handleAddToChat} disabled={!generatedImage} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-all transform hover:scale-[1.02] active:scale-95">Cancel</button>
+          <button onClick={handleAddToChat} disabled={!generatedImage} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
             Add to Chat
           </button>
         </div>

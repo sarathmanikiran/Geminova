@@ -19,7 +19,7 @@ export const CopyCodeButton: React.FC<CopyCodeButtonProps> = ({ code }) => {
   };
 
   return (
-    <button onClick={handleCopy} className="flex items-center gap-1 hover:text-white rounded-md p-1 transition-all hover:shadow-glow-accent">
+    <button onClick={handleCopy} className="flex items-center gap-1 hover:text-white rounded-md p-1 transition-all transform hover:scale-105 hover:shadow-glow-accent active:scale-95">
       {isCopied ? <Icons.Check className="w-4 h-4 text-green-500" /> : <Icons.Copy className="w-4 h-4" />}
       <span className="text-xs">{isCopied ? 'Copied!' : 'Copy'}</span>
     </button>

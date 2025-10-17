@@ -57,10 +57,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onSa
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg border border-glass-border" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg border border-glass-border animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-glass-border flex justify-between items-center">
           <h2 className="text-xl font-semibold">Edit Profile</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95">
             <Icons.Close className="w-6 h-6" />
           </button>
         </div>
@@ -75,7 +75,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onSa
                   {getInitials(user.name)}
                 </div>
               )}
-              <button onClick={triggerFileSelect} className="absolute bottom-0 right-0 p-1.5 bg-gray-700 rounded-full hover:bg-purple-600 transition-colors shadow-glow-accent">
+              <button onClick={triggerFileSelect} className="absolute bottom-0 right-0 p-1.5 bg-gray-700 rounded-full hover:bg-purple-600 transition-all transform hover:scale-110 shadow-glow-accent active:scale-95">
                 <Icons.Edit className="w-4 h-4" />
               </button>
               <input type="file" ref={fileInputRef} onChange={handlePictureChange} accept="image/*" className="hidden" />
@@ -89,22 +89,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onSa
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500" />
+              <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" />
             </div>
              <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500" />
+              <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Bio</label>
-              <textarea name="bio" value={formData.bio || ''} onChange={handleChange} rows={3} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 resize-none" placeholder="Tell us a little about yourself..."></textarea>
+              <textarea name="bio" value={formData.bio || ''} onChange={handleChange} rows={3} className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors" placeholder="Tell us a little about yourself..."></textarea>
             </div>
           </div>
         </div>
 
         <div className="bg-gray-900/50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">Cancel</button>
-          <button onClick={handleSave} disabled={saveState !== 'idle'} className="px-4 py-2 w-32 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all shadow-glow-primary flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-all transform hover:scale-[1.02] active:scale-95">Cancel</button>
+          <button onClick={handleSave} disabled={saveState !== 'idle'} className="px-4 py-2 w-32 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all shadow-glow-primary flex items-center justify-center disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
             {saveState === 'idle' && 'Save Changes'}
             {saveState === 'saving' && <><Icons.Spinner className="w-5 h-5 mr-2" /> Saving...</>}
             {saveState === 'saved' && <><Icons.Check className="w-5 h-5 mr-2" /> Saved!</>}

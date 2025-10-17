@@ -1,29 +1,37 @@
-import React, { useRef, useLayoutEffect } from 'react';
+
+import React, { useRef, useEffect } from 'react';
 import { Message, User } from '../../types';
 import { ChatMessage } from '../ChatMessage';
 
 interface MessageListProps {
   messages: Message[];
   user: User;
-  sendMessage: (message: string, useGoogleSearch?: boolean) => void;
+  sendMessage: (message: string) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({ messages, user, sendMessage }) => {
-  const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // useLayoutEffect fires synchronously after all DOM mutations, ensuring that
-  // the new message is rendered before we try to scroll to it. This provides
-  // a more reliable smooth scroll than using a timed delay.
-  useLayoutEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
+  
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage(suggestion);
+  };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div ref={scrollRef} className="h-full w-full overflow-y-auto">
       {messages.map((message) => (
-        <ChatMessage key={message.id} message={message} user={user} sendMessage={sendMessage} />
+        <ChatMessage 
+            key={message.id} 
+            message={message} 
+            user={user}
+            onSuggestionClick={handleSuggestionClick}
+        />
       ))}
-      <div ref={endOfMessagesRef} />
     </div>
   );
 };

@@ -1,5 +1,7 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
-import { AIPersonality, ChatSession } from '../../types';
+import { ChatSession, AIPersonality } from '../../types';
 import { Icons } from '../Icons';
 
 interface SettingsMenuProps {
@@ -7,42 +9,9 @@ interface SettingsMenuProps {
   setChats: React.Dispatch<React.SetStateAction<ChatSession[]>>;
 }
 
-const personalities: {
-  value: AIPersonality;
-  label: string;
-  description: string;
-  // Fix: Changed JSX.Element to React.ReactElement to resolve namespace issue.
-  icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
-}[] = [
-  {
-    value: 'friendly',
-    label: 'Friendly',
-    description: 'Warm, approachable, and empathetic.',
-    icon: Icons.Sparkles,
-  },
-  {
-    value: 'professional',
-    label: 'Professional',
-    description: 'Formal, precise, and knowledgeable.',
-    icon: Icons.Briefcase,
-  },
-  {
-    value: 'humorous',
-    label: 'Humorous',
-    description: 'Witty, clever, and lighthearted.',
-    icon: Icons.Brain,
-  },
-];
-
-
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ currentChat, setChats }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
-  const handlePersonalityChange = (personality: AIPersonality) => {
-    setChats(prev => prev.map(c => c.id === currentChat.id ? { ...c, personality } : c));
-    setIsOpen(false);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,41 +23,62 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ currentChat, setChats }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const updateSetting = (key: keyof ChatSession, value: any) => {
+    setChats(prev =>
+      prev.map(chat =>
+        chat.id === currentChat.id ? { ...chat, [key]: value } : chat
+      )
+    );
+  };
+  
+  const personalities: { id: AIPersonality; label: string }[] = [
+      { id: 'friendly', label: 'Friendly' },
+      { id: 'professional', label: 'Professional' },
+      { id: 'humorous', label: 'Humorous' },
+  ];
+
   return (
     <div className="relative" ref={menuRef}>
-      <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-full hover:bg-white/10 transition-all hover:shadow-glow-accent">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95"
+        title="Chat Settings"
+      >
         <Icons.Settings className="w-5 h-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-glass-border rounded-lg shadow-xl z-10 animate-fade-in-sm">
+        <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 border border-glass-border rounded-lg shadow-xl z-10 animate-menu-in">
           <div className="p-3">
-            <p className="text-sm font-semibold text-gray-300 mb-2 px-2">AI Personality</p>
-            <div className="flex flex-col gap-1">
-              {personalities.map(p => {
-                const Icon = p.icon;
-                const isSelected = currentChat.personality === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    onClick={() => handlePersonalityChange(p.value)}
-                    className={`w-full text-left p-2 rounded-md transition-all duration-300 flex items-center gap-3 ${
-                      isSelected 
-                        ? 'bg-purple-600 text-white shadow-glow-primary' 
-                        : 'hover:bg-gray-700/80 text-gray-200'
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
-                    <div>
-                      <p className="font-semibold text-sm">{p.label}</p>
-                      <p className={`text-xs ${isSelected ? 'text-purple-200' : 'text-gray-400'}`}>
-                        {p.description}
-                      </p>
+             <div className="mb-3">
+                <label className="block text-xs font-semibold text-gray-400 mb-2">AI Personality</label>
+                <div className="flex flex-col gap-1">
+                    {personalities.map(p => (
+                         <button 
+                            key={p.id}
+                            onClick={() => updateSetting('personality', p.id)}
+                            className={`w-full text-left text-sm px-3 py-1.5 rounded-md transition-all transform hover:scale-[1.02] active:scale-[0.98] ${currentChat.personality === p.id ? 'bg-purple-600/50' : 'hover:bg-white/10'}`}
+                         >
+                            {p.label}
+                         </button>
+                    ))}
+                </div>
+             </div>
+             <div>
+                <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-sm font-medium">Google Search</span>
+                    <div className="relative">
+                        <input
+                            type="checkbox"
+                            checked={currentChat.useGoogleSearch}
+                            onChange={(e) => updateSetting('useGoogleSearch', e.target.checked)}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">Allow the AI to use Google Search for more current information.</p>
+             </div>
           </div>
         </div>
       )}
