@@ -1,4 +1,3 @@
-
 import React, { useState, ChangeEvent } from 'react';
 import { Icons } from '../Icons';
 import * as GeminiService from '../../services/geminiService';
@@ -120,7 +119,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
              <button
                 onClick={handleEdit}
                 disabled={isLoading || !prompt.trim() || !originalImage}
-                className="w-full flex items-center justify-center gap-2 mt-auto p-3 bg-primary hover:bg-primary-hover rounded-lg font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95"
+                className="w-full flex items-center justify-center gap-2 mt-auto px-4 py-2 bg-primary hover:bg-primary-hover rounded-md font-semibold transition-all disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95"
               >
                 {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Wand className="w-5 h-5" />}
                 <span>{isLoading ? 'Editing...' : 'Edit Image'}</span>
@@ -162,7 +161,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
 
         <div className="bg-gray-900/50 px-6 py-4 flex justify-end gap-3 rounded-b-lg flex-shrink-0">
           <button onClick={handleClose} className="px-4 py-2 text-sm font-medium bg-gray-700 rounded-md hover:bg-gray-600 transition-all transform hover:scale-[1.02] active:scale-95">Cancel</button>
-          <button onClick={handleAddToChat} disabled={!editedImage} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-all shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
+          <button onClick={handleAddToChat} disabled={!editedImage} className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-hover transition-all shadow-glow-primary disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95">
             Add to Chat
           </button>
         </div>

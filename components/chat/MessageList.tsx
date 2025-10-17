@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Message, User } from '../../types';
 import { ChatMessage } from '../ChatMessage';
+import { useTTS } from '../../hooks/useTTS';
 
 interface MessageListProps {
   messages: Message[];
@@ -11,6 +12,7 @@ interface MessageListProps {
 
 const MessageList: React.FC<MessageListProps> = ({ messages, user, sendMessage }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tts = useTTS();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -30,6 +32,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, user, sendMessage }
             message={message} 
             user={user}
             onSuggestionClick={handleSuggestionClick}
+            tts={tts}
         />
       ))}
     </div>

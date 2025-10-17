@@ -22,7 +22,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, onChoice }) => {
             <button
               key={i}
               onClick={() => onChoice(choice)}
-              className="w-full text-left p-2 bg-gray-700 hover:bg-purple-700 rounded-md transition-all text-sm hover:shadow-glow-primary transform hover:scale-[1.02] active:scale-95"
+              className="w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-all text-sm transform hover:scale-[1.02] active:scale-95"
             >
               {choice}
             </button>

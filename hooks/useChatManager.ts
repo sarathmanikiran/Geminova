@@ -1,7 +1,10 @@
 
+
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ChatSession, User, MessageContent, MessageType } from '../types';
+// Fix: Import GroundingChunk to use the correct type definition for sanitizing API responses.
+import { Message, ChatSession, User, MessageContent, MessageType, GroundingChunk } from '../types';
 import * as GeminiService from '../services/geminiService';
 import { GenerateContentResponse } from '@google/genai';
 
@@ -144,7 +147,19 @@ const useChatManager = (user: User | null) => {
             }
             
             const { cleanedText, suggestions } = parseResponse(fullResponseText);
-            const groundingChunks = finalResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+            
+            // Fix: The GroundingChunk type from the Gemini API has optional properties, while the app's internal type
+            // expects required properties. This maps the API response to the app's type, ensuring type compatibility
+            // and filtering out any chunks that are missing a URI.
+            const apiGroundingChunks = finalResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+            const groundingChunks: GroundingChunk[] | undefined = apiGroundingChunks
+                ?.map(chunk => ({
+                    web: {
+                        uri: chunk.web?.uri || '',
+                        title: chunk.web?.title || 'Untitled Source',
+                    }
+                }))
+                .filter(chunk => chunk.web.uri);
 
             updateMessages(activeChat.id, prev =>
                 prev.map(m =>
@@ -168,8 +183,12 @@ const useChatManager = (user: User | null) => {
                 content: e.message || "An unknown error occurred.",
                 timestamp: Date.now(),
             };
-            updateMessages(activeChat.id, prev => prev.filter(m => m.id !== assistantMessage.id));
-            setError(errorMessage);
+             // Replace the streaming placeholder with the error message
+            updateMessages(activeChat.id, prev => [
+                ...prev.filter(m => m.id !== assistantMessage.id),
+                errorMessage
+            ]);
+            setError(null); // No longer needed for bottom-of-screen display
         } finally {
             setIsLoading(false);
         }

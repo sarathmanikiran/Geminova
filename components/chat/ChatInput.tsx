@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { Icons } from '../Icons';
@@ -71,7 +69,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Send message on Ctrl+Enter or Cmd+Enter
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSend();
     }
@@ -172,7 +171,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Geminova anything..."
+          placeholder="Ask Geminova anything... (Ctrl+Enter to send)"
           className="w-full bg-transparent resize-none border-none focus:ring-0 text-white placeholder-gray-500 max-h-48 py-2"
           rows={1}
           disabled={isLoading}

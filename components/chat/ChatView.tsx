@@ -25,7 +25,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
     sendMessage,
     isLoading,
     error,
-    sendImage,
+    // Fix: Removed 'sendImage' as it does not exist on the object returned by useChatManager.
     setChats,
     createNewChat,
     addImageToChat,
@@ -73,18 +73,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
 
       <ChatInput
         onSendMessage={sendMessage}
-        onSendImage={sendImage}
         isLoading={isLoading}
         currentChatId={currentChat?.id || null}
         createNewChat={createNewChat}
         onGenerateImageClick={() => setIsImageModalOpen(true)}
         onEditImageClick={() => setIsImageEditModalOpen(true)}
       />
-      {error && (
-        <div className="p-4 text-center text-red-400 bg-red-900/50">
-          Error: {error.content as string}
-        </div>
-      )}
       <ImageGenerationModal 
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}

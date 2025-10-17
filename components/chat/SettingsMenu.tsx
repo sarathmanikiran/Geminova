@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatSession, AIPersonality } from '../../types';
 import { Icons } from '../Icons';
@@ -20,8 +17,22 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ currentChat, setChats }) =>
         setIsOpen(false);
       }
     };
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+Shift+S or Cmd+Shift+S to toggle settings
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        setIsOpen(prev => !prev);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const updateSetting = (key: keyof ChatSession, value: any) => {

@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import useChatManager from './hooks/useChatManager';
 import { LoginScreen } from './components/LoginScreen';
 import Sidebar from './components/chat/Sidebar';
 import { ChatView } from './components/chat/ChatView';
 import { Icons } from './components/Icons';
-import { isApiKeyConfigured } from './services/geminiService';
-import { ApiKeyErrorScreen } from './components/ApiKeyErrorScreen';
 import useMediaQuery from './hooks/useMediaQuery';
 
 function App() {
@@ -15,16 +13,26 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  // Check API key status on initial render
-  const [isApiReady] = useState(isApiKeyConfigured());
-
   const handleToggleSidebar = () => {
     setIsSidebarOpen(prev => !prev);
   };
 
-  if (!isApiReady) {
-    return <ApiKeyErrorScreen />;
-  }
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+N or Cmd+N for New Chat
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
+        event.preventDefault();
+        chatManager.createNewChat();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [chatManager.createNewChat]);
+  
+  // The API key check is removed from here. Errors will now be handled
+  // gracefully within the chat interface when an API call is made.
 
   if (loading) {
     return (

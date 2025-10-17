@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,30 +15,47 @@ import { FollowUpSuggestions } from './chat/FollowUpSuggestions';
 import { useTTS } from '../hooks/useTTS';
 import { TypingIndicator } from './TypingIndicator';
 
+interface CircularProgressProps {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+}
+const CircularProgress: React.FC<CircularProgressProps> = ({ progress, size = 40, strokeWidth = 3 }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clampedProgress = Math.max(0, Math.min(100, progress));
+  const offset = circumference - (clampedProgress / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90 absolute inset-0">
+      <circle className="text-white/20" stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" r={radius} cx={size / 2} cy={size / 2} />
+      <circle className="text-white" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" fill="transparent" r={radius} cx={size / 2} cy={size / 2} style={{ transition: 'stroke-dashoffset 0.1s linear' }} />
+    </svg>
+  );
+};
+
+
 interface ChatMessageProps {
   message: Message;
   user: User;
   onSuggestionClick: (suggestion: string) => void;
+  tts: ReturnType<typeof useTTS>;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSuggestionClick }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSuggestionClick, tts }) => {
   const isUser = message.role === 'user';
-  const { ttsState, activeMessageId, start, stop, isAudioPaused, audioProgress, audioDuration, seekAudio } = useTTS();
+  const isError = message.role === 'error';
+  const { ttsState, activeMessageId, start, stop, audioProgress, audioDuration, seekAudio } = tts;
 
   const handleTTSClick = () => {
     if (typeof message.content === 'string') {
-        if (activeMessageId === message.id) {
-            // This allows play/pause functionality
-            start(message.content, message.id);
-        } else {
-            // This stops any other audio and starts this one
-            stop();
-            start(message.content, message.id);
-        }
+        // Simplified logic: the useTTS hook now handles play/pause/stop internally.
+        start(message.content, message.id);
     }
   };
   
   const isTtsActive = activeMessageId === message.id;
+  const isTtsEligible = !isUser && !isError && typeof message.content === 'string' && message.content.length > 20;
 
   const UserAvatar = () => (
     user.profilePicture ? (
@@ -54,6 +70,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
   const AssistantAvatar = () => (
     <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-600">
       <Icons.Logo className="w-6 h-6 p-0.5" />
+    </div>
+  );
+  
+  const ErrorAvatar = () => (
+    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500/50">
+        <Icons.Error className="w-5 h-5 text-red-400" />
     </div>
   );
   
@@ -119,65 +141,105 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
     }
   };
   
-  const AudioPlayer = () => (
-    <div className="mt-2 p-2 bg-gray-800/50 rounded-lg animate-fade-in-sm">
-        <div className="flex items-center gap-2">
-            <button onClick={handleTTSClick} className="flex-shrink-0 w-10 h-10 flex items-center justify-center p-2 rounded-full bg-primary hover:bg-primary-hover text-white transition-all transform hover:scale-105 active:scale-95">
-                {ttsState === 'loading' && <Icons.Spinner className="w-5 h-5"/>}
-                {ttsState === 'playing' && <Icons.Pause className="w-5 h-5"/>}
-                {ttsState === 'paused' && <Icons.Play className="w-5 h-5"/>}
-            </button>
-            <div className="flex-1 flex items-center gap-2">
-                <span className="text-xs font-mono text-gray-400">{formatTime(audioProgress)}</span>
-                <input 
-                    type="range"
-                    min="0"
-                    max={audioDuration || 1}
-                    value={audioProgress}
-                    onChange={(e) => seekAudio(parseFloat(e.target.value))}
-                    className="tts-progress w-full"
-                />
-                <span className="text-xs font-mono text-gray-400">{formatTime(audioDuration)}</span>
-            </div>
-            <button onClick={stop} className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all transform hover:scale-110 active:scale-95" title="Close player">
-                <Icons.Close className="w-4 h-4"/>
-            </button>
+  const TtsControls = () => {
+    if (!isTtsEligible) return null;
+  
+    return isTtsActive ? (
+      <div className="flex items-center gap-3 w-full max-w-xs animate-fade-in-sm">
+        <button
+          onClick={handleTTSClick}
+          className="relative flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary hover:bg-primary-hover text-white transition-transform transform hover:scale-105 active:scale-95"
+        >
+          {ttsState === 'loading' && <Icons.Spinner className="w-4 h-4" />}
+          {(ttsState === 'playing' || ttsState === 'paused') && (
+            <>
+              <CircularProgress progress={audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0} size={32} strokeWidth={2.5} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {ttsState === 'playing' && <Icons.Pause className="w-4 h-4" />}
+                {ttsState === 'paused' && <Icons.Play className="w-4 h-4" />}
+              </div>
+            </>
+          )}
+        </button>
+        <div className="flex-grow">
+          <input
+            type="range"
+            className="tts-progress"
+            min="0"
+            max={audioDuration || 1}
+            value={audioProgress}
+            onChange={(e) => seekAudio(parseFloat(e.target.value))}
+            disabled={ttsState === 'loading'}
+            aria-label="Audio progress"
+          />
+          <div className="flex justify-between text-gray-400 text-xs font-mono tabular-nums mt-1">
+            <span>{formatTime(audioProgress)}</span>
+            <span>{formatTime(audioDuration)}</span>
+          </div>
         </div>
-    </div>
-  );
+        <button
+          onClick={stop}
+          className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all transform hover:scale-110 active:scale-95"
+          title="Stop player"
+        >
+          <Icons.Close className="w-4 h-4" />
+        </button>
+      </div>
+    ) : (
+      <button
+        onClick={handleTTSClick}
+        className="flex items-center rounded-full p-2 -m-2 text-gray-400 hover:text-white hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95"
+        title="Play audio"
+      >
+        <Icons.Play className="w-4 h-4" />
+      </button>
+    );
+  };
 
   return (
     <div className={`flex gap-4 p-3 md:p-4 ${isUser ? 'justify-end' : 'animate-float-in'}`}>
-      {!isUser && (
+      {!isUser && !isError && (
         <div className="flex-shrink-0">
           <AssistantAvatar />
         </div>
       )}
-      <div className={`flex flex-col max-w-2xl ${isUser ? 'items-end' : 'items-start'}`}>
-        <div className={`rounded-lg px-4 py-2 ${isUser ? 'bg-blue-600/50 rounded-br-none' : 'bg-gray-700/60 rounded-bl-none shadow-glow-assistant'}`}>
-          <div className="prose prose-sm md:prose-base prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ol:my-2 prose-ul:my-2 break-words overflow-x-auto">
-            {message.isStreaming && typeof message.content === 'string' && message.content.length === 0 ? (
-              <TypingIndicator />
-            ) : (
-              renderContent()
-            )}
-            {message.isStreaming && typeof message.content === 'string' && message.content.length > 0 && (
-              <span className="blinking-cursor">|</span>
-            )}
-          </div>
+      {isError && (
+         <div className="flex-shrink-0">
+          <ErrorAvatar />
         </div>
-        
-        {isTtsActive && <AudioPlayer />}
+      )}
+      <div className={`flex flex-col max-w-2xl ${isUser ? 'items-end' : 'items-start'}`}>
+        <div className={`rounded-lg px-4 py-2 ${
+          isUser 
+          ? 'bg-blue-600/50 rounded-br-none' 
+          : isError
+            ? 'bg-red-900/40 border border-red-500/30 rounded-bl-none shadow-glow-error'
+            : 'bg-gray-700/60 rounded-bl-none shadow-glow-assistant'
+        }`}>
+           {isError ? (
+            <div className="text-red-300">
+                <p className="font-semibold">Service Error</p>
+                <p className="text-sm break-words">{message.content as string}</p>
+            </div>
+          ) : (
+            <div className="prose prose-sm md:prose-base prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ol:my-2 prose-ul:my-2 break-words overflow-x-auto">
+                {message.isStreaming && typeof message.content === 'string' && message.content.length === 0 ? (
+                <TypingIndicator />
+                ) : (
+                renderContent()
+                )}
+                {message.isStreaming && typeof message.content === 'string' && message.content.length > 0 && (
+                <span className="blinking-cursor">|</span>
+                )}
+            </div>
+          )}
+        </div>
 
         <div className="text-xs text-gray-500 mt-1 px-1 flex items-center gap-4">
           <span>{formatTimestamp(message.timestamp)}</span>
-          {!isUser && typeof message.content === 'string' && message.content.length > 20 && !isTtsActive && (
-             <button onClick={handleTTSClick} className="flex items-center gap-1 hover:text-white transition-all transform hover:scale-110 active:scale-95" title='Text-to-Speech'>
-                <Icons.Play className="w-4 h-4"/>
-             </button>
-          )}
+          <TtsControls />
         </div>
-        {!isUser && message.suggestions && message.suggestions.length > 0 && (
+        {!isUser && !isError && message.suggestions && message.suggestions.length > 0 && (
             <FollowUpSuggestions suggestions={message.suggestions} onSuggestionClick={onSuggestionClick} />
         )}
          {message.groundingChunks && message.groundingChunks.length > 0 && (

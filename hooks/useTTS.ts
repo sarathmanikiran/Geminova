@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import * as GeminiService from '../services/geminiService';
 import { pcmToWav, base64ToArrayBuffer } from '../utils/audioUtils';
+import { useToast } from '../components/chat/VoiceMode';
 
 type TTSState = 'idle' | 'loading' | 'playing' | 'paused';
 
@@ -9,13 +10,19 @@ export const useTTS = () => {
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const [audioProgress, setAudioProgress] = useState(0);
     const [audioDuration, setAudioDuration] = useState(0);
+    const { showToast } = useToast();
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const progressIntervalRef = useRef<number | null>(null);
+    const activeRequestRef = useRef<string | null>(null);
 
     const cleanup = useCallback(() => {
+        activeRequestRef.current = null;
         if (audioRef.current) {
             audioRef.current.pause();
+            if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audioRef.current.src);
+            }
             audioRef.current.src = '';
             audioRef.current = null;
         }
@@ -48,40 +55,68 @@ export const useTTS = () => {
         }
 
         cleanup();
+        
+        activeRequestRef.current = messageId;
         setActiveMessageId(messageId);
         setTtsState('loading');
 
         try {
             const audioB64 = await GeminiService.textToSpeech(text);
-            if (!audioB64) throw new Error("No audio data returned.");
+            
+            // If another request started while this one was in-flight, abandon this one.
+            if (activeRequestRef.current !== messageId) return;
+
+            // Handle the case where the API call succeeds but returns no audio data.
+            if (!audioB64) {
+                console.error("TTS Error: The API returned no audio data.");
+                showToast("Could not generate audio for this message.", 'error');
+                cleanup();
+                return;
+            }
 
             const pcmData = base64ToArrayBuffer(audioB64);
             const wavBlob = pcmToWav(pcmData, 24000);
             const audioUrl = URL.createObjectURL(wavBlob);
 
             audioRef.current = new Audio(audioUrl);
+            
+            audioRef.current.onerror = () => {
+                if (activeRequestRef.current === messageId) {
+                    showToast("An error occurred during audio playback.", 'error');
+                    cleanup();
+                }
+            };
+            
             audioRef.current.play();
             setTtsState('playing');
 
             audioRef.current.onloadedmetadata = () => {
-                if (audioRef.current) setAudioDuration(audioRef.current.duration);
+                if (audioRef.current && activeRequestRef.current === messageId) {
+                     setAudioDuration(audioRef.current.duration);
+                }
             };
 
             audioRef.current.onended = () => {
-                cleanup();
+                if (activeRequestRef.current === messageId) {
+                    cleanup();
+                }
             };
 
             progressIntervalRef.current = window.setInterval(() => {
-                if (audioRef.current) {
+                if (audioRef.current && activeRequestRef.current === messageId) {
                     setAudioProgress(audioRef.current.currentTime);
                 }
             }, 100);
 
         } catch (error) {
-            console.error("TTS failed:", error);
-            cleanup();
+            console.error("TTS service call failed:", error);
+            if (activeRequestRef.current === messageId) {
+                // This catches failures in the GeminiService.textToSpeech call itself (e.g., network error).
+                showToast("Failed to generate audio due to a service error.", 'error');
+                cleanup();
+            }
         }
-    }, [ttsState, activeMessageId, cleanup]);
+    }, [ttsState, activeMessageId, cleanup, showToast]);
     
     const seekAudio = useCallback((newTime: number) => {
         if (audioRef.current && isFinite(newTime)) {
@@ -92,7 +127,7 @@ export const useTTS = () => {
 
     useEffect(() => {
         return () => {
-            cleanup(); // Ensure cleanup on component unmount
+            cleanup();
         };
     }, [cleanup]);
     

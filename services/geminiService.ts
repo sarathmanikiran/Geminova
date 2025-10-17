@@ -1,20 +1,32 @@
 
-
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { Message, AIPersonality, ChatSession, GroundingChunk } from '../types';
-
+let API_KEY="AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ"
 let ai: GoogleGenAI | undefined;
 
-try {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-} catch (error) {
-  console.error("Failed to initialize GoogleGenAI. API key might be missing.", error);
-  ai = undefined;
-}
+// Lazy-initialization of the Gemini client.
+// This avoids a hard crash on startup if the API key is not yet available
+// and allows for graceful error handling within the UI.
+const getAiClient = (): GoogleGenAI => {
+    if (ai) {
+        return ai;
+    }
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        // This error will be caught by the chat manager and displayed in the chat window.
+        throw new Error("API key not configured. Cannot connect to Gemini service.");
+    }
 
-export const isApiKeyConfigured = (): boolean => {
-  return !!ai;
+    try {
+        ai = new GoogleGenAI({ apiKey });
+        return ai;
+    } catch (error) {
+        console.error("Failed to initialize GoogleGenAI:", error);
+        // Provide a more user-friendly error if initialization fails (e.g., invalid key format)
+        throw new Error("Failed to initialize Gemini client. The API key might be invalid.");
+    }
 };
+
 
 const getSystemInstruction = (personality: AIPersonality): string => {
   const basePrompt = `You are Geminova, a futuristic, multimodal AI companion. You are integrated into a sleek, dark-themed web application with glassmorphism effects. Your responses should be intelligent, concise, and reflect a next-gen AI. After your main response, suggest 2-3 brief, relevant follow-up questions or actions the user might take. Format them like this: [SUGGESTION]A short suggestion here.[/SUGGESTION]. Do not add suggestions if the user's prompt is very simple, like 'hello'.`;
@@ -45,12 +57,12 @@ export const streamChat = async (
   personality: AIPersonality,
   useGoogleSearch: boolean
 ) => {
-  if (!ai) throw new Error("API key not configured. Cannot connect to Gemini.");
+  const aiClient = getAiClient();
   
   const history = buildHistory(messages.slice(0, -1));
   const latestMessage = messages[messages.length - 1];
 
-  const stream = await ai.models.generateContentStream({
+  const stream = await aiClient.models.generateContentStream({
     model: 'gemini-2.5-flash',
     contents: [...history, { role: 'user', parts: [{ text: latestMessage.content as string }] }],
     config: {
@@ -86,8 +98,8 @@ export const generateTitleForChat = async (firstUserMessage: string, firstAssist
 };
 
 export const generateImage = async (prompt: string, aspectRatio: '1:1' | '16:9' | '9:16') => {
-    if (!ai) throw new Error("API key not configured.");
-    const response = await ai.models.generateImages({
+    const aiClient = getAiClient();
+    const response = await aiClient.models.generateImages({
         model: 'imagen-4.0-generate-001',
         prompt,
         config: {
@@ -101,9 +113,9 @@ export const generateImage = async (prompt: string, aspectRatio: '1:1' | '16:9' 
 };
 
 export const editImage = async (prompt: string, imageBase64: string, mimeType: string) => {
-    if (!ai) throw new Error("API key not configured.");
+    const aiClient = getAiClient();
     const base64Data = imageBase64.split(',')[1] || imageBase64;
-    const response = await ai.models.generateContent({
+    const response = await aiClient.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
             parts: [
@@ -137,8 +149,8 @@ export const editImage = async (prompt: string, imageBase64: string, mimeType: s
 };
 
 export const textToSpeech = async (text: string): Promise<string | null> => {
-    if (!ai) throw new Error("API key not configured.");
-    const response = await ai.models.generateContent({
+    const aiClient = getAiClient();
+    const response = await aiClient.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text }] }],
         config: {
@@ -153,9 +165,9 @@ export const textToSpeech = async (text: string): Promise<string | null> => {
 
 // Fix: Add missing fetchSuggestionsForAction function to generate dynamic suggestions for UI actions.
 export const fetchSuggestionsForAction = async (actionLabel: string): Promise<string[]> => {
-    if (!ai) return [];
+    const aiClient = getAiClient();
     try {
-        const result = await ai.models.generateContent({
+        const result = await aiClient.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Generate 3 concise, creative suggestions for the action: "${actionLabel}". Return as a JSON array of strings. For example: ["suggestion 1", "suggestion 2", "suggestion 3"]. Do not include any other text or markdown.`,
             config: {
