@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { ChatSession } from '../../types';
 import { Icons } from '../Icons';
@@ -12,7 +14,7 @@ interface ChatHeaderProps {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ currentChat, onToggleSidebar, isSidebarOpen, setChats }) => {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-glass-border bg-black/30 backdrop-blur-sm flex-shrink-0">
+    <div className="flex items-center justify-between p-3 md:p-4 border-b border-glass-border bg-background-dark flex-shrink-0">
       <div className="flex items-center gap-4">
         {!isSidebarOpen && (
           <button onClick={onToggleSidebar} className="p-1 rounded-md hover:bg-white/10 md:hidden">

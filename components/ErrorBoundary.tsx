@@ -1,5 +1,3 @@
-
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Icons } from './Icons';
 
@@ -12,7 +10,9 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  // Fix: Use a class property to initialize state. This is a more modern syntax and resolves issues with `this.state` and `this.props` not being found.
+  // Fix: Initialized state using a class property instead of a constructor.
+  // This is a more modern approach that avoids potential issues with 'this' context
+  // and resolves the errors where `this.state` and `this.props` were not being recognized.
   state: State = { hasError: false };
 
   static getDerivedStateFromError(_: Error): State {

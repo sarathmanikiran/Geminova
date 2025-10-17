@@ -35,6 +35,17 @@ export function formatTimestamp(timestamp: number): string {
 }
 
 /**
+ * Formats a duration in seconds into a "m:ss" time string.
+ */
+export function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return '0:00';
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+
+/**
  * NOTE: This is a simple, non-secure obfuscation method for demonstration purposes only.
  * It is NOT suitable for production use. A real application must use proper hashing (e.g., bcrypt).
  * It simply reverses the string and converts it to base64.

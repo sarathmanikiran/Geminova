@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Icons } from '../Icons';
 
@@ -15,10 +16,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask, onGenerateIm
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in">
+    <div className="flex flex-col items-center justify-center h-full text-center p-4 md:p-8 animate-fade-in">
       <Icons.Logo className="w-20 h-20 mb-4" />
-      <h1 className="text-4xl font-display font-bold mb-2">How can I help you today?</h1>
-      <p className="text-lg text-secondary-text mb-8">I'm Geminova, your multimodal AI assistant.</p>
+      <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">How can I help you today?</h1>
+      <p className="text-base md:text-lg text-secondary-text mb-8">I'm Geminova, your multimodal AI assistant.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
         {tasks.map((task) => {

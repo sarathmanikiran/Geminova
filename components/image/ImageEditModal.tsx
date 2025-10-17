@@ -1,3 +1,4 @@
+
 import React, { useState, ChangeEvent } from 'react';
 import { Icons } from '../Icons';
 import * as GeminiService from '../../services/geminiService';
@@ -98,7 +99,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
         <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
           {/* Left Panel: Original Image & Prompt */}
           <div className="flex flex-col gap-4">
-            <div className="relative w-full h-64 bg-gray-900/50 rounded-lg flex items-center justify-center group">
+            <div className="relative w-full h-48 md:h-64 bg-gray-900/50 rounded-lg flex items-center justify-center group">
               {originalImage ? (
                 <img src={originalImage.dataUrl} alt="Original" className="max-w-full max-h-full rounded-lg object-contain" />
               ) : (
@@ -128,7 +129,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose,
 
           {/* Right Panel: Edited Image */}
           <div className="flex flex-col gap-4">
-            <div className="w-full h-64 bg-gray-900/50 rounded-lg flex items-center justify-center p-4">
+            <div className="w-full h-48 md:h-64 bg-gray-900/50 rounded-lg flex items-center justify-center p-4">
                {isLoading && (
                 <div className="text-center">
                   <Icons.Spinner className="w-12 h-12 text-primary mx-auto" />

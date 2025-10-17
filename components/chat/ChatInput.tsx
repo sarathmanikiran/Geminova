@@ -115,9 +115,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
   
   return (
-    <div className="px-4 pb-4 bg-gray-900 border-t border-glass-border">
-      <div className={`relative flex items-end gap-2 p-2 bg-gray-800/50 rounded-lg border transition-colors ${isLoading ? 'border-purple-500 animate-pulse' : 'border-glass-border focus-within:border-purple-500'}`}>
+    <div className="px-2 pb-3 sm:px-4 sm:pb-4 bg-gray-900 border-t border-glass-border">
+      <div className={`relative flex items-end gap-1 sm:gap-2 p-1.5 sm:p-2 bg-gray-800/50 rounded-lg border transition-colors ${isLoading ? 'border-purple-500 animate-pulse' : 'border-glass-border focus-within:border-purple-500'}`}>
         
+        {useSearchForNextMessage && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-blue-600/90 text-white text-xs font-semibold px-3 py-1 rounded-full animate-float-in flex items-center gap-1.5 shadow-glow-user">
+            <Icons.Search className="w-3 h-3" />
+            <span>Google Search Enabled</span>
+          </div>
+        )}
+
         <div className="relative flex-shrink-0 self-end mb-1">
           {isAttachmentMenuOpen && (
             <div ref={menuRef} className="absolute bottom-full mb-2 w-56 bg-gray-800 rounded-lg shadow-xl border border-glass-border z-10 animate-menu-in p-2 space-y-1">
@@ -153,7 +160,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <button 
             ref={buttonRef}
             onClick={() => setIsAttachmentMenuOpen(prev => !prev)} 
-            className="p-2 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 hover:shadow-glow-accent active:scale-95" 
+            className="p-1.5 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 hover:shadow-glow-accent active:scale-95" 
             title="Attach or generate"
           >
             <Icons.Plus className="w-5 h-5" />
@@ -166,20 +173,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask Geminova anything..."
-          className="w-full bg-transparent resize-none border-none focus:ring-0 text-white placeholder-gray-500 max-h-48 py-2.5"
+          className="w-full bg-transparent resize-none border-none focus:ring-0 text-white placeholder-gray-500 max-h-48 py-2"
           rows={1}
           disabled={isLoading}
         />
         <div className="flex-shrink-0 flex items-center gap-1 self-end mb-1">
           {hasRecognitionSupport && (
-            <button onClick={handleMicClick} className={`p-2 rounded-full transition-all transform hover:scale-110 ${isListening ? 'bg-red-500/50 text-red-300 animate-pulse' : 'hover:bg-white/10'} active:scale-95`} title="Use Microphone">
+            <button onClick={handleMicClick} className={`p-1.5 rounded-full transition-all transform hover:scale-110 ${isListening ? 'bg-red-500/50 text-red-300 animate-pulse' : 'hover:bg-white/10'} active:scale-95`} title="Use Microphone">
               <Icons.Microphone className="w-5 h-5" />
             </button>
           )}
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="p-2 rounded-full bg-primary hover:bg-primary-hover disabled:bg-gray-600 disabled:cursor-not-allowed transition-all transform hover:scale-110 active:scale-95"
+            className="p-1.5 rounded-full bg-primary hover:bg-primary-hover disabled:bg-gray-600 disabled:cursor-not-allowed transition-all transform hover:scale-110 active:scale-95"
             title="Send Message"
           >
             {isLoading ? <Icons.Spinner className="w-5 h-5" /> : <Icons.Send className="w-5 h-5" />}

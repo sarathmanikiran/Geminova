@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { Message, AIPersonality, ChatSession, GroundingChunk } from '../types';
 
@@ -60,20 +61,28 @@ export const streamChat = async (
   return stream;
 };
 
-export const generateTitleForChat = async (firstUserMessage: string, firstAssistantMessage: string): Promise<string> => {
-  if (!ai) return "New Chat";
-  try {
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Generate a concise, 3-5 word title for a conversation that starts like this. Do not use quotes or any introductory text.
-        User: "${firstUserMessage}"
-        AI: "${firstAssistantMessage}"`,
-    });
-    return result.text.trim();
-  } catch (error) {
-    console.error("Title generation failed:", error);
-    return "New Chat";
-  }
+export const generateTitleForChat = async (firstUserMessage: string, firstAssistantMessage?: string): Promise<string> => {
+  // Replaced API call with local title generation to prevent rate-limiting errors.
+  // This creates a concise title from the user's first message without consuming API quota.
+  return new Promise((resolve) => {
+    try {
+      if (!firstUserMessage || typeof firstUserMessage !== 'string') {
+        resolve("New Chat");
+        return;
+      }
+      const words = firstUserMessage.split(' ');
+      // Take the first 5 words, or less if the message is shorter.
+      const title = words.length > 5 
+        ? words.slice(0, 5).join(' ') + '...' 
+        : firstUserMessage;
+      
+      // Fallback for empty messages.
+      resolve(title.trim() || "New Chat");
+    } catch (error) {
+      console.error("Local title generation failed:", error);
+      resolve("New Chat"); // Resolve with a fallback title on error.
+    }
+  });
 };
 
 export const generateImage = async (prompt: string, aspectRatio: '1:1' | '16:9' | '9:16') => {

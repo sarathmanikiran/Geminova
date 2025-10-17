@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatSession, AIPersonality } from '../../types';
 import { Icons } from '../Icons';
@@ -57,9 +58,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ currentChat, setChats }) =>
                          <button 
                             key={p.id}
                             onClick={() => updateSetting('personality', p.id)}
-                            className={`w-full text-left text-sm px-3 py-1.5 rounded-md transition-all transform hover:scale-[1.02] active:scale-[0.98] ${currentChat.personality === p.id ? 'bg-purple-600/50' : 'hover:bg-white/10'}`}
+                            className={`w-full flex items-center justify-between text-left text-sm px-3 py-1.5 rounded-md transition-all transform hover:scale-[1.02] active:scale-[0.98] ${currentChat.personality === p.id ? 'bg-purple-600/50 text-white' : 'hover:bg-white/10'}`}
                          >
-                            {p.label}
+                            <span>{p.label}</span>
+                            {currentChat.personality === p.id && <Icons.Check className="w-4 h-4" />}
                          </button>
                     ))}
                 </div>

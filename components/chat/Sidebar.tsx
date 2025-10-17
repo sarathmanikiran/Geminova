@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { User, ChatSession } from '../../types';
 import { Icons } from '../Icons';
@@ -57,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
 
   return (
     <>
-      <aside className={`absolute md:relative z-20 flex flex-col h-full bg-gray-900/70 backdrop-blur-xl border-r border-glass-border transition-transform duration-200 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-64 flex-shrink-0`}>
+      <aside className={`absolute md:relative z-20 flex flex-col h-full bg-background-dark border-r border-glass-border transition-transform duration-200 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-full max-w-xs md:w-80 flex-shrink-0`}>
         <div className="flex items-center justify-between p-4 border-b border-glass-border">
           <div className="flex items-center gap-2">
             <Icons.Logo className="w-8 h-8" />

@@ -8,12 +8,13 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { Message, User } from '../types';
 import { Icons } from './Icons';
-import { getInitials } from '../utils';
+import { getInitials, formatTime } from '../utils';
 import { formatTimestamp } from '../utils';
 import { CopyCodeButton } from './CopyCodeButton';
 import { StructuredResponse } from './StructuredResponse';
 import { FollowUpSuggestions } from './chat/FollowUpSuggestions';
 import { useTTS } from '../hooks/useTTS';
+import { TypingIndicator } from './TypingIndicator';
 
 interface ChatMessageProps {
   message: Message;
@@ -37,6 +38,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
         }
     }
   };
+  
+  const isTtsActive = activeMessageId === message.id;
 
   const UserAvatar = () => (
     user.profilePicture ? (
@@ -64,7 +67,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
               const match = /language-(\w+)/.exec(className || '');
               const codeString = String(children).replace(/\n$/, '');
               return !inline && match ? (
-                <div className="relative my-2 rounded-md bg-[#1e1e1e]">
+                <div className="relative my-2 rounded-md bg-[#1e1e1e] overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-1 bg-gray-700/50 rounded-t-md">
                       <span className="text-xs text-gray-400">{match[1]}</span>
                       <CopyCodeButton code={codeString} />
@@ -115,9 +118,36 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
             return <p>Unsupported message content</p>;
     }
   };
+  
+  const AudioPlayer = () => (
+    <div className="mt-2 p-2 bg-gray-800/50 rounded-lg animate-fade-in-sm">
+        <div className="flex items-center gap-2">
+            <button onClick={handleTTSClick} className="flex-shrink-0 w-10 h-10 flex items-center justify-center p-2 rounded-full bg-primary hover:bg-primary-hover text-white transition-all transform hover:scale-105 active:scale-95">
+                {ttsState === 'loading' && <Icons.Spinner className="w-5 h-5"/>}
+                {ttsState === 'playing' && <Icons.Pause className="w-5 h-5"/>}
+                {ttsState === 'paused' && <Icons.Play className="w-5 h-5"/>}
+            </button>
+            <div className="flex-1 flex items-center gap-2">
+                <span className="text-xs font-mono text-gray-400">{formatTime(audioProgress)}</span>
+                <input 
+                    type="range"
+                    min="0"
+                    max={audioDuration || 1}
+                    value={audioProgress}
+                    onChange={(e) => seekAudio(parseFloat(e.target.value))}
+                    className="tts-progress w-full"
+                />
+                <span className="text-xs font-mono text-gray-400">{formatTime(audioDuration)}</span>
+            </div>
+            <button onClick={stop} className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all transform hover:scale-110 active:scale-95" title="Close player">
+                <Icons.Close className="w-4 h-4"/>
+            </button>
+        </div>
+    </div>
+  );
 
   return (
-    <div className={`flex gap-4 p-4 ${isUser ? 'justify-end' : 'animate-float-in'}`}>
+    <div className={`flex gap-4 p-3 md:p-4 ${isUser ? 'justify-end' : 'animate-float-in'}`}>
       {!isUser && (
         <div className="flex-shrink-0">
           <AssistantAvatar />
@@ -125,18 +155,25 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
       )}
       <div className={`flex flex-col max-w-2xl ${isUser ? 'items-end' : 'items-start'}`}>
         <div className={`rounded-lg px-4 py-2 ${isUser ? 'bg-blue-600/50 rounded-br-none' : 'bg-gray-700/60 rounded-bl-none shadow-glow-assistant'}`}>
-          <div className="prose prose-sm prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ol:my-2 prose-ul:my-2">
-            {renderContent()}
-            {message.isStreaming && <Icons.Spinner className="w-5 h-5 inline-block ml-2" />}
+          <div className="prose prose-sm md:prose-base prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ol:my-2 prose-ul:my-2 break-words overflow-x-auto">
+            {message.isStreaming && typeof message.content === 'string' && message.content.length === 0 ? (
+              <TypingIndicator />
+            ) : (
+              renderContent()
+            )}
+            {message.isStreaming && typeof message.content === 'string' && message.content.length > 0 && (
+              <span className="blinking-cursor">|</span>
+            )}
           </div>
         </div>
+        
+        {isTtsActive && <AudioPlayer />}
+
         <div className="text-xs text-gray-500 mt-1 px-1 flex items-center gap-4">
           <span>{formatTimestamp(message.timestamp)}</span>
-          {!isUser && typeof message.content === 'string' && message.content.length > 20 && (
-             <button onClick={handleTTSClick} className="flex items-center gap-1 hover:text-white transition-all transform hover:scale-110 active:scale-95" title={isAudioPaused ? 'Resume' : 'Text-to-Speech'}>
-                {ttsState === 'loading' && <Icons.Spinner className="w-4 h-4"/>}
-                {ttsState === 'playing' && <Icons.Pause className="w-4 h-4"/>}
-                {(ttsState === 'idle' || ttsState === 'paused') && <Icons.Play className="w-4 h-4"/>}
+          {!isUser && typeof message.content === 'string' && message.content.length > 20 && !isTtsActive && (
+             <button onClick={handleTTSClick} className="flex items-center gap-1 hover:text-white transition-all transform hover:scale-110 active:scale-95" title='Text-to-Speech'>
+                <Icons.Play className="w-4 h-4"/>
              </button>
           )}
         </div>
