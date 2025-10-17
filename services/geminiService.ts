@@ -11,7 +11,7 @@ const getAiClient = (): GoogleGenAI => {
     if (ai) {
         return ai;
     }
-    const apiKey = process.env.API_KEY;
+    const apiKey = "AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ";
     if (!apiKey) {
         // This error will be caught by the chat manager and displayed in the chat window.
         throw new Error("API key not configured. Cannot connect to Gemini service.");
