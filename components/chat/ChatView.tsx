@@ -61,24 +61,27 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
       <div className="flex-1 overflow-y-auto">
         {showWelcomeScreen ? (
           <WelcomeScreen 
-            onStartTask={(prompt, useSearch) => sendMessage(prompt, useSearch)} 
+            onStartTask={(prompt, useSearch) => sendMessage(prompt, { useSearch })} 
             onGenerateImageClick={() => setIsImageModalOpen(true)}
           />
         ) : showInitialWelcome ? (
           <InitialWelcomeMessage />
         ) : (
-          <MessageList messages={messages} user={user} sendMessage={sendMessage} />
+          <MessageList messages={messages} user={user} sendMessage={(prompt) => sendMessage(prompt)} />
         )}
       </div>
 
-      <ChatInput
-        onSendMessage={sendMessage}
-        isLoading={isLoading}
-        currentChatId={currentChat?.id || null}
-        createNewChat={createNewChat}
-        onGenerateImageClick={() => setIsImageModalOpen(true)}
-        onEditImageClick={() => setIsImageEditModalOpen(true)}
-      />
+      <div className="flex-shrink-0">
+        <ChatInput
+          onSendMessage={sendMessage}
+          isLoading={isLoading}
+          currentChatId={currentChat?.id || null}
+          createNewChat={createNewChat}
+          onGenerateImageClick={() => setIsImageModalOpen(true)}
+          onEditImageClick={() => setIsImageEditModalOpen(true)}
+        />
+      </div>
+
       <ImageGenerationModal 
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}

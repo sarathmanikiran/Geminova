@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { Message, AIPersonality, ChatSession, GroundingChunk } from '../types';
 let API_KEY="AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ"
@@ -55,16 +56,34 @@ const buildHistory = (messages: Message[]) => {
 export const streamChat = async (
   messages: Message[],
   personality: AIPersonality,
-  useGoogleSearch: boolean
+  useGoogleSearch: boolean,
+  attachment?: { name: string; type: string; content: string; }
 ) => {
   const aiClient = getAiClient();
   
   const history = buildHistory(messages.slice(0, -1));
   const latestMessage = messages[messages.length - 1];
 
+  let userParts: ({ text: string } | { inlineData: { mimeType: string; data: string; } })[] = [{ text: latestMessage.content as string }];
+
+  if (attachment) {
+    // Logic simplified to only handle image attachments, as the UI now restricts uploads to images.
+    if (attachment.type.startsWith('image/')) {
+      userParts = [
+        {
+          inlineData: {
+            mimeType: attachment.type,
+            data: attachment.content.split(',')[1] // Remove data URL prefix
+          }
+        },
+        { text: latestMessage.content as string }
+      ];
+    }
+  }
+
   const stream = await aiClient.models.generateContentStream({
     model: 'gemini-2.5-flash',
-    contents: [...history, { role: 'user', parts: [{ text: latestMessage.content as string }] }],
+    contents: [...history, { role: 'user', parts: userParts }],
     config: {
         systemInstruction: getSystemInstruction(personality),
         tools: useGoogleSearch ? [{ googleSearch: {} }] : undefined,

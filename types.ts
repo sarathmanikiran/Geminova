@@ -1,4 +1,5 @@
 
+
 export type AIPersonality = 'professional' | 'humorous' | 'friendly';
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'error';
@@ -45,6 +46,10 @@ export interface Message {
   isStreaming?: boolean;
   suggestions?: string[];
   groundingChunks?: GroundingChunk[];
+  attachment?: {
+    name: string;
+    type: string;
+  };
 }
 
 export interface ChatSession {

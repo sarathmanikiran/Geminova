@@ -10,14 +10,10 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  // Fix: Reverted to using a constructor for state initialization. The class property
-  // initializer, while modern, seemed to cause a TypeScript error where 'this.props'
-  // was not recognized on the component instance. Using a constructor explicitly
-  // handles props and resolves the issue.
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  // Fix: Replaced the constructor with a class property for state initialization.
+  // This resolves typing errors where `this.state` and `this.props` were not
+  // being recognized on the component instance.
+  state: State = { hasError: false };
 
   static getDerivedStateFromError(_: Error): State {
     return { hasError: true };
@@ -38,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-all transform hover:scale-105 active:scale-95"
+            className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-all transform hover:scale-105 active-scale-95"
           >
             Refresh
           </button>

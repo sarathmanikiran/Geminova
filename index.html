@@ -20,6 +20,28 @@
       .blinking-cursor {
         animation: blink 1s step-end infinite;
       }
+      /* Custom Scrollbar for Webkit Browsers */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #374151; /* border-dark */
+        border-radius: 4px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #4b5563; /* gray-600 */
+      }
+      /* Custom Scrollbar for Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #374151 transparent;
+      }
     }
     @keyframes blink {
       from, to { color: transparent }
@@ -105,6 +127,7 @@
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
             display: ['Lexend', 'sans-serif'],
+            mono: ['Fira Code', 'Menlo', 'monospace'],
           },
           boxShadow: {
             'glow-primary': '0 0 15px 2px rgba(139, 92, 246, 0.4), 0 0 5px 0px rgba(139, 92, 246, 0.3)',
@@ -198,7 +221,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>

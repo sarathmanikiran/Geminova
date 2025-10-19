@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -89,22 +90,45 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
               const match = /language-(\w+)/.exec(className || '');
               const codeString = String(children).replace(/\n$/, '');
               return !inline && match ? (
-                <div className="relative my-2 rounded-md bg-[#1e1e1e] overflow-x-auto">
-                  <div className="flex items-center justify-between px-4 py-1 bg-gray-700/50 rounded-t-md">
-                      <span className="text-xs text-gray-400">{match[1]}</span>
-                      <CopyCodeButton code={codeString} />
+                <div className="relative my-4 rounded-lg bg-[#1e1e1e] border border-gray-700/50 shadow-lg overflow-hidden font-mono text-sm">
+                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800/60 border-b border-gray-700/50">
+                    <span className="font-sans text-gray-300 uppercase tracking-wider text-xs">{match[1]}</span>
+                    <CopyCodeButton code={codeString} />
                   </div>
                   <SyntaxHighlighter
                     style={vscDarkPlus}
                     language={match[1]}
                     PreTag="div"
+                    showLineNumbers={true}
+                    lineNumberStyle={{
+                      minWidth: '2.5em',
+                      paddingRight: '1.5em',
+                      textAlign: 'right',
+                      userSelect: 'none',
+                      color: '#6b7280'
+                    }}
+                    customStyle={{
+                      margin: 0,
+                      padding: '1rem 0',
+                      backgroundColor: 'transparent',
+                    }}
+                    codeTagProps={{
+                      style: {
+                        fontFamily: "'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace",
+                        lineHeight: '1.6',
+                        fontSize: '13px',
+                        paddingRight: '1rem'
+                      }
+                    }}
                     {...props}
                   >
                     {codeString}
                   </SyntaxHighlighter>
                 </div>
               ) : (
-                <code className={className} {...props}>{children}</code>
+                <code className="px-1.5 py-1 bg-gray-700/70 rounded-md font-mono text-[0.9em]" {...props}>
+                    {children}
+                </code>
               );
             },
           }}
@@ -216,6 +240,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
             ? 'bg-red-900/40 border border-red-500/30 rounded-bl-none shadow-glow-error'
             : 'bg-gray-700/60 rounded-bl-none shadow-glow-assistant'
         }`}>
+           {isUser && message.attachment && (
+            <div className="mb-2 p-2 bg-blue-900/40 rounded-md text-sm flex items-center gap-2 border border-blue-500/30">
+              <Icons.Image className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{message.attachment.name}</span>
+            </div>
+           )}
            {isError ? (
             <div className="text-red-300">
                 <p className="font-semibold">Service Error</p>

@@ -1,12 +1,15 @@
 
 
 
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 // Fix: Import GroundingChunk to use the correct type definition for sanitizing API responses.
 import { Message, ChatSession, User, MessageContent, MessageType, GroundingChunk } from '../types';
 import * as GeminiService from '../services/geminiService';
 import { GenerateContentResponse } from '@google/genai';
+
+type Attachment = { name: string; type: string; content: string; };
 
 const useChatManager = (user: User | null) => {
     const [chats, setChats] = useState<ChatSession[]>([]);
@@ -101,7 +104,7 @@ const useChatManager = (user: User | null) => {
         return { cleanedText, suggestions };
     };
 
-    const sendMessage = useCallback(async (content: string, useSearch?: boolean) => {
+    const sendMessage = useCallback(async (content: string, options?: { attachment?: Attachment, useSearch?: boolean }) => {
         let activeChat = currentChat;
         if (!activeChat) {
             activeChat = createNewChat();
@@ -113,6 +116,7 @@ const useChatManager = (user: User | null) => {
             type: 'text',
             content,
             timestamp: Date.now(),
+            attachment: options?.attachment ? { name: options.attachment.name, type: options.attachment.type } : undefined,
         };
 
         const assistantMessage: Message = {
@@ -132,7 +136,12 @@ const useChatManager = (user: User | null) => {
         const chatHistory = [...activeChat.messages, userMessage];
 
         try {
-            const stream = await GeminiService.streamChat(chatHistory, activeChat.personality, useSearch ?? activeChat.useGoogleSearch);
+            const stream = await GeminiService.streamChat(
+                chatHistory,
+                activeChat.personality,
+                options?.useSearch ?? activeChat.useGoogleSearch,
+                options?.attachment
+            );
             let fullResponseText = '';
             let finalResponse: GenerateContentResponse | undefined;
 
