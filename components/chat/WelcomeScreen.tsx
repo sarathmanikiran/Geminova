@@ -4,10 +4,9 @@ import { useToast } from './VoiceMode';
 
 interface WelcomeScreenProps {
   onStartTask: (prompt: string, useGoogleSearch?: boolean) => void;
-  onGenerateImageClick: () => void;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask, onGenerateImageClick }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask }) => {
   const { showToast } = useToast();
   
   const tasks = [
@@ -19,7 +18,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask, onGenerateIm
 
   const handleTaskClick = (task: typeof tasks[0]) => {
     if (task.isGenerator) {
-      onGenerateImageClick();
+      showToast("Image generation is coming soon!", 'info');
     } else {
       onStartTask(task.prompt, task.useSearch);
     }

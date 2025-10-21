@@ -9,6 +9,7 @@ interface CameraCaptureProps {
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const webcamRef = useRef<Webcam>(null);
 
   const capture = useCallback(() => {
@@ -18,11 +19,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
       setIsCameraOpen(false);
     }
   }, [webcamRef, onCapture]);
+  
+  const toggleCamera = useCallback(() => {
+    setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
+  }, []);
 
   const videoConstraints = {
     width: 1280,
     height: 720,
-    facingMode: 'user',
+    facingMode,
   };
 
   return (
@@ -44,9 +49,21 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
               videoConstraints={videoConstraints}
               className="rounded-md w-full h-auto"
             />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <div className="absolute bottom-4 w-full px-8 flex items-center justify-between">
+              {/* Spacer to center the capture button */}
+              <div className="w-12 h-12" />
+
               <button onClick={capture} className="w-16 h-16 rounded-full bg-white flex items-center justify-center animate-pulse-glow shadow-glow-primary transition-transform transform hover:scale-105 active:scale-95">
                  <div className="w-14 h-14 rounded-full bg-white border-2 border-black"></div>
+              </button>
+              
+              <button 
+                onClick={toggleCamera} 
+                className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white transition-transform transform hover:scale-105 active:scale-95" 
+                aria-label="Switch camera" 
+                title="Switch Camera"
+              >
+                <Icons.FlipCamera className="w-6 h-6" />
               </button>
             </div>
           </div>

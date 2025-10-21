@@ -5,8 +5,6 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ChatHeader from './ChatHeader';
 import WelcomeScreen from './WelcomeScreen';
-import { ImageGenerationModal } from '../image/ImageGenerationModal';
-import { ImageEditModal } from '../image/ImageEditModal';
 import { Icons } from '../Icons';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { InitialWelcomeMessage } from './InitialWelcomeMessage';
@@ -25,27 +23,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
     sendMessage,
     isLoading,
     error,
-    // Fix: Removed 'sendImage' as it does not exist on the object returned by useChatManager.
     setChats,
     createNewChat,
-    addImageToChat,
-    addImageEditResultToChat,
   } = chatManager;
   
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [isImageEditModalOpen, setIsImageEditModalOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
   
-  const handleImageGenerated = (imageDataUrl: string, prompt: string) => {
-    addImageToChat(imageDataUrl, prompt);
-    setIsImageModalOpen(false);
-  };
-
-  const handleImageEdited = (imageDataUrl: string, description: string) => {
-    addImageEditResultToChat(imageDataUrl, description);
-    setIsImageEditModalOpen(false);
-  };
-
   const showWelcomeScreen = messages.length === 0 && currentChat && !isMobile;
   const showInitialWelcome = messages.length === 0 && currentChat && isMobile;
 
@@ -62,7 +45,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
         {showWelcomeScreen ? (
           <WelcomeScreen 
             onStartTask={(prompt, useSearch) => sendMessage(prompt, { useSearch })} 
-            onGenerateImageClick={() => setIsImageModalOpen(true)}
           />
         ) : showInitialWelcome ? (
           <InitialWelcomeMessage />
@@ -77,21 +59,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
           isLoading={isLoading}
           currentChatId={currentChat?.id || null}
           createNewChat={createNewChat}
-          onGenerateImageClick={() => setIsImageModalOpen(true)}
-          onEditImageClick={() => setIsImageEditModalOpen(true)}
         />
       </div>
 
-      <ImageGenerationModal 
-        isOpen={isImageModalOpen}
-        onClose={() => setIsImageModalOpen(false)}
-        onImageGenerated={handleImageGenerated}
-      />
-      <ImageEditModal
-        isOpen={isImageEditModalOpen}
-        onClose={() => setIsImageEditModalOpen(false)}
-        onImageEdited={handleImageEdited}
-      />
     </div>
   );
 };
