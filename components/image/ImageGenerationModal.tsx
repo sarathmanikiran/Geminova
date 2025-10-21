@@ -8,8 +8,11 @@ interface ImageGenerationModalProps {
   onImageGenerated: (imageDataUrl: string, prompt: string) => void;
 }
 
+type AspectRatio = '1:1' | '16:9' | '9:16';
+
 export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOpen, onClose, onImageGenerated }) => {
   const [prompt, setPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
     setError(null);
     setGeneratedImage(null);
     try {
-      const image = await GeminiService.generateImage(prompt);
+      const image = await GeminiService.generateImage(prompt, aspectRatio);
       setGeneratedImage(image);
     } catch (e: any) {
       console.error("Image generation failed:", e);
@@ -58,6 +61,12 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
       setGeneratedImage(null);
     }
   };
+
+  const aspectRatios: { label: string; value: AspectRatio }[] = [
+    { label: 'Square', value: '1:1' },
+    { label: 'Landscape', value: '16:9' },
+    { label: 'Portrait', value: '9:16' },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
@@ -82,6 +91,25 @@ export const ImageGenerationModal: React.FC<ImageGenerationModalProps> = ({ isOp
                 className="w-full h-32 bg-gray-700 border border-gray-600 rounded-md p-3 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors"
                 disabled={isLoading}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Aspect Ratio</label>
+              <div className="flex gap-2">
+                {aspectRatios.map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => setAspectRatio(value)}
+                    disabled={isLoading}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all transform hover:scale-105 active:scale-100 ${
+                      aspectRatio === value
+                        ? 'bg-purple-600 text-white shadow-glow-primary'
+                        : 'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={handleGenerate}
