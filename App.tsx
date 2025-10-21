@@ -6,12 +6,23 @@ import Sidebar from './components/chat/Sidebar';
 import { ChatView } from './components/chat/ChatView';
 import { Icons } from './components/Icons';
 import useMediaQuery from './hooks/useMediaQuery';
+import { ApiKeyErrorScreen } from './components/ApiKeyErrorScreen';
 
 function App() {
   const { user, signIn, signUp, signOut, loading, updateUser } = useAuth();
   const chatManager = useChatManager(user);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState(true);
   const isMobile = useMediaQuery('(max-width: 767px)');
+
+  useEffect(() => {
+    // Check for the API key on initial load.
+    // This provides a clear error state if the app is not configured.
+    if (!process.env.API_KEY) {
+      console.error("Fatal: API_KEY is not defined in process.env.");
+      setIsApiKeyConfigured(false);
+    }
+  }, []);
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(prev => !prev);
@@ -30,9 +41,11 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [chatManager.createNewChat]);
-  
-  // The API key check is removed from here. Errors will now be handled
-  // gracefully within the chat interface when an API call is made.
+
+  // If the API key is missing, show a dedicated error screen.
+  if (!isApiKeyConfigured) {
+    return <ApiKeyErrorScreen />;
+  }
 
   if (loading) {
     return (

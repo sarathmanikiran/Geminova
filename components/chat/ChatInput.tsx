@@ -149,27 +149,23 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleDeepResearch = () => setInputAction("Research the topic: ", true);
   const handleThinkFast = () => setInputAction("Let's have a brainstorming session. My topic is ");
   const handleStudyHelper = () => setInputAction("Help me study the topic of ");
-
-  const handleCapture = useCallback((imageSrc: string) => {
-    setAttachedFile({
-        name: `webcam-capture-${Date.now()}.jpg`,
-        type: 'image/jpeg',
-        content: imageSrc,
-    });
-  }, []);
-  
-  const capture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot();
-    if (imageSrc) {
-      handleCapture(imageSrc);
-      setIsCameraModalOpen(false);
-    }
-  }, [webcamRef, handleCapture]);
   
   const handleCameraClick = () => {
     setIsAttachmentMenuOpen(false);
     setIsCameraModalOpen(true);
   };
+
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      setAttachedFile({
+        name: `webcam-capture-${Date.now()}.jpg`,
+        type: 'image/jpeg',
+        content: imageSrc,
+      });
+      setIsCameraModalOpen(false);
+    }
+  }, [webcamRef]);
   
   return (
     <>
@@ -210,7 +206,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     <Icons.Wand className="w-5 h-5 text-indigo-400" />
                     <span>Edit Image</span>
                   </button>
-                   <button 
+                  <button 
                     onClick={handleCameraClick}
                     className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-sm text-left transition-all active:scale-[0.98]"
                   >
@@ -283,22 +279,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       {isCameraModalOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-fade-in p-4">
-          <div className="bg-gray-900 p-4 rounded-lg border border-glass-border relative w-full max-w-3xl shadow-glow-primary">
-             <button onClick={() => setIsCameraModalOpen(false)} className="absolute top-2 right-2 p-2 bg-gray-800/50 rounded-full z-10 hover:shadow-glow-accent transition-all transform hover:scale-110 active:scale-95">
-                <Icons.Close className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-fade-in p-4" onClick={() => setIsCameraModalOpen(false)}>
+          <div className="bg-gray-900 rounded-lg border border-glass-border w-full max-w-3xl shadow-glow-primary flex flex-col overflow-hidden animate-modal-in" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex justify-between items-center p-3 border-b border-glass-border bg-black/30">
+              <h3 className="text-lg font-semibold flex items-center gap-2"><Icons.Camera className="w-5 h-5 text-red-400"/> Camera Capture</h3>
+              <button onClick={() => setIsCameraModalOpen(false)} className="p-1.5 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95" aria-label="Close camera">
+                <Icons.Close className="w-5 h-5" />
               </button>
-            <Webcam
-              audio={false}
-              ref={webcamRef}
-              screenshotFormat="image/jpeg"
-              videoConstraints={{ width: 1280, height: 720, facingMode: 'user' }}
-              className="rounded-md w-full h-auto"
-            />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center">
-              <button onClick={capture} className="w-16 h-16 rounded-full bg-white flex items-center justify-center animate-pulse-glow shadow-glow-primary transition-transform transform hover:scale-105 active:scale-95">
-                 <div className="w-14 h-14 rounded-full bg-white border-2 border-black"></div>
-              </button>
+            </div>
+
+            {/* Body */}
+            <div className="relative p-2 bg-black">
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                videoConstraints={{ width: 1280, height: 720, facingMode: 'user' }}
+                className="rounded-md w-full h-auto aspect-video"
+              />
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                <button onClick={capture} className="w-16 h-16 rounded-full bg-white flex items-center justify-center animate-pulse-glow shadow-glow-primary transition-transform transform hover:scale-105 active:scale-95" aria-label="Capture photo">
+                   <div className="w-14 h-14 rounded-full bg-white border-2 border-black"></div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
