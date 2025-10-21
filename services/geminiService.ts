@@ -1,8 +1,10 @@
 
-
 import { GoogleGenAI, GenerateContentResponse, Modality, Type } from "@google/genai";
 import { Message, AIPersonality, ChatSession, GroundingChunk } from '../types';
-let API_KEY="AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ"
+import { parseApiError } from "../utils/errorUtils";
+
+// FIX: Corrected the type of the `ai` variable to `GoogleGenAI | undefined` to resolve the TypeScript error
+// where a value was being used as a type. The hardcoded API key was also removed to comply with guidelines.
 let ai: GoogleGenAI | undefined;
 
 // Lazy-initialization of the Gemini client.
@@ -12,7 +14,8 @@ const getAiClient = (): GoogleGenAI => {
     if (ai) {
         return ai;
     }
-    const apiKey = "AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ";
+    // FIX: The API key must be obtained from `process.env.API_KEY` as per the guidelines.
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
         // This error will be caught by the chat manager and displayed in the chat window.
         throw new Error("API key not configured. Cannot connect to Gemini service.");
@@ -24,13 +27,13 @@ const getAiClient = (): GoogleGenAI => {
     } catch (error) {
         console.error("Failed to initialize GoogleGenAI:", error);
         // Provide a more user-friendly error if initialization fails (e.g., invalid key format)
-        throw new Error("Failed to initialize Gemini client. The API key might be invalid.");
+        throw new Error(parseApiError(error));
     }
 };
 
 
 const getSystemInstruction = (personality: AIPersonality): string => {
-  const basePrompt = `You are Geminova, a futuristic, multimodal AI companion. You are integrated into a sleek, dark-themed web application with glassmorphism effects. Your responses should be intelligent, concise, and reflect a next-gen AI. After your main response, suggest 2-3 brief, relevant follow-up questions or actions the user might take. Format them like this: [SUGGESTION]A short suggestion here.[/SUGGESTION]. Do not add suggestions if the user's prompt is very simple, like 'hello'.`;
+  const basePrompt = `You are Geminova, a futuristic, multimodal AI companion. You are integrated into a sleek, dark-themed web application with glassmorphism effects. Your responses should be intelligent, concise, and reflect a next-gen AI. When you provide code snippets, you MUST wrap them in markdown code blocks with the correct language identifier (e.g., \`\`\`javascript). For complex snippets, provide a brief explanation of how the code works either before or after the code block. After your main response, suggest 2-3 brief, relevant follow-up questions or actions the user might take. Format them like this: [SUGGESTION]A short suggestion here.[/SUGGESTION]. Do not add suggestions if the user's prompt is very simple, like 'hello'.`;
   
   switch (personality) {
     case 'professional':
@@ -80,16 +83,19 @@ export const streamChat = async (
       ];
     }
   }
-
-  const stream = await aiClient.models.generateContentStream({
-    model: 'gemini-2.5-flash',
-    contents: [...history, { role: 'user', parts: userParts }],
-    config: {
-        systemInstruction: getSystemInstruction(personality),
-        tools: useGoogleSearch ? [{ googleSearch: {} }] : undefined,
-    }
-  });
-  return stream;
+  try {
+    const stream = await aiClient.models.generateContentStream({
+        model: 'gemini-2.5-flash',
+        contents: [...history, { role: 'user', parts: userParts }],
+        config: {
+            systemInstruction: getSystemInstruction(personality),
+            tools: useGoogleSearch ? [{ googleSearch: {} }] : undefined,
+        }
+    });
+    return stream;
+  } catch(error) {
+    throw new Error(parseApiError(error));
+  }
 };
 
 export const generateTitleForChat = async (firstUserMessage: string, firstAssistantMessage?: string): Promise<string> => {
@@ -116,70 +122,103 @@ export const generateTitleForChat = async (firstUserMessage: string, firstAssist
   });
 };
 
-export const generateImage = async (prompt: string, aspectRatio: '1:1' | '16:9' | '9:16') => {
+// Fix: Updated generateImage to support aspectRatio by using the 'imagen-4.0-generate-001' model.
+// This resolves the error in ImageGenerationView where a second argument was passed.
+export const generateImage = async (prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' = '1:1') => {
     const aiClient = getAiClient();
-    const response = await aiClient.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio,
-        },
-    });
-    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+    try {
+        const response = await aiClient.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt,
+            config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/png',
+            aspectRatio,
+            },
+        });
+
+        const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+
+        if (!base64ImageBytes) {
+        throw new Error("Image generation failed to return an image.");
+        }
+
+        return `data:image/png;base64,${base64ImageBytes}`;
+    } catch (error) {
+        throw new Error(parseApiError(error));
+    }
 };
 
 export const editImage = async (prompt: string, imageBase64: string, mimeType: string) => {
     const aiClient = getAiClient();
     const base64Data = imageBase64.split(',')[1] || imageBase64;
-    const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [
-              { inlineData: { data: base64Data, mimeType } },
-              { text: `Edit instruction: ${prompt}. Also, provide a one-sentence description of the changes made.` },
-            ],
-        },
-        config: {
-          // Fix: The responseModalities array for image editing must contain exactly one modality, which is Modality.IMAGE.
-          responseModalities: [Modality.IMAGE],
-        },
-    });
+    try {
+        const response = await aiClient.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [
+                { inlineData: { data: base64Data, mimeType } },
+                { text: `Edit instruction: ${prompt}. Also, provide a one-sentence description of the changes made.` },
+                ],
+            },
+            config: {
+            // The responseModalities array for image editing must contain exactly one modality, which is Modality.IMAGE.
+            responseModalities: [Modality.IMAGE],
+            },
+        });
 
-    let newImageBase64: string | null = null;
-    let description = "Image edited successfully.";
+        let newImageBase64: string | null = null;
+        let description = "Image edited successfully.";
 
-    for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-            newImageBase64 = part.inlineData.data;
-        } else if (part.text) {
-            description = part.text;
+        // Fix: Safely access the content parts from the API response.
+        // The previous implementation would crash if `response.candidates` was empty
+        // or did not have the expected structure, causing the reported error.
+        const contentParts = response.candidates?.[0]?.content?.parts;
+
+        if (!contentParts || contentParts.length === 0) {
+            console.error("Image editing response did not contain expected content parts:", response);
+            throw new Error("Image editing failed: The response from the AI was invalid or empty.");
         }
-    }
 
-    if (!newImageBase64) throw new Error("Image editing failed to return an image.");
-    
-    return {
-        editedImage: `data:${mimeType};base64,${newImageBase64}`,
-        description,
-    };
+        for (const part of contentParts) {
+            if (part.inlineData) {
+                newImageBase64 = part.inlineData.data;
+            } else if (part.text) {
+                description = part.text;
+            }
+        }
+
+        if (!newImageBase64) {
+        // This can happen if the response contains text but no image data.
+        throw new Error("Image editing failed to return an image.");
+        }
+        
+        return {
+            editedImage: `data:${mimeType};base64,${newImageBase64}`,
+            description,
+        };
+    } catch (error) {
+        throw new Error(parseApiError(error));
+    }
 };
 
 export const textToSpeech = async (text: string): Promise<string | null> => {
     const aiClient = getAiClient();
-    const response = await aiClient.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text }] }],
-        config: {
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } },
+    try {
+        const response = await aiClient.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } },
+                },
             },
-        },
-    });
-    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data ?? null;
+        });
+        return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data ?? null;
+    } catch (error) {
+        throw new Error(parseApiError(error));
+    }
 };
 
 // Fix: Add missing fetchSuggestionsForAction function to generate dynamic suggestions for UI actions.

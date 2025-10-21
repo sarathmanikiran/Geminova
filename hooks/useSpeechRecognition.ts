@@ -31,6 +31,7 @@ export const useSpeechRecognition = () => {
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -47,11 +48,16 @@ export const useSpeechRecognition = () => {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-        const currentTranscript = Array.from(event.results)
-            .map(result => result[0])
-            .map(result => result.transcript)
-            .join('');
-        setTranscript(currentTranscript);
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcriptPart = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscriptRef.current += transcriptPart;
+          } else {
+            interimTranscript += transcriptPart;
+          }
+        }
+        setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
     recognition.onerror = (event: Event) => {
@@ -77,6 +83,7 @@ export const useSpeechRecognition = () => {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       setTranscript(''); // Clear previous transcript before starting
+      finalTranscriptRef.current = ''; // Reset the ref on start
       try {
         recognitionRef.current.start();
         setIsListening(true);

@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,26 +16,7 @@ import { StructuredResponse } from './StructuredResponse';
 import { FollowUpSuggestions } from './chat/FollowUpSuggestions';
 import { useTTS } from '../hooks/useTTS';
 import { TypingIndicator } from './TypingIndicator';
-
-interface CircularProgressProps {
-  progress: number;
-  size?: number;
-  strokeWidth?: number;
-}
-const CircularProgress: React.FC<CircularProgressProps> = ({ progress, size = 40, strokeWidth = 3 }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clampedProgress = Math.max(0, Math.min(100, progress));
-  const offset = circumference - (clampedProgress / 100) * circumference;
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90 absolute inset-0">
-      <circle className="text-white/20" stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" r={radius} cx={size / 2} cy={size / 2} />
-      <circle className="text-white" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" fill="transparent" r={radius} cx={size / 2} cy={size / 2} style={{ transition: 'stroke-dashoffset 0.1s linear' }} />
-    </svg>
-  );
-};
-
+import { CodeExecution } from './CodeExecution';
 
 interface ChatMessageProps {
   message: Message;
@@ -43,19 +25,84 @@ interface ChatMessageProps {
   tts: ReturnType<typeof useTTS>;
 }
 
+// A new, styled TTS button component for improved UX
+const TtsPlayerButton: React.FC<{
+  ttsState: 'idle' | 'loading' | 'playing' | 'paused';
+  onClick: () => void;
+}> = ({ ttsState, onClick }) => {
+  const isLoading = ttsState === 'loading';
+
+  const iconMap = {
+    loading: <Icons.Volume className="w-5 h-5 text-primary" />,
+    playing: <Icons.Pause className="w-5 h-5 text-white" />,
+    paused: <Icons.Play className="w-5 h-5 text-white" />,
+    idle: <Icons.Volume className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />,
+  };
+
+  const titleMap = {
+    loading: 'Loading audio...',
+    playing: 'Pause audio',
+    paused: 'Resume audio',
+    idle: 'Play audio',
+  };
+
+  const buttonClasses = `group relative w-9 h-9 flex items-center justify-center rounded-full transition-all transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background-dark
+    ${ttsState === 'playing' ? 'bg-primary/40' : ''}
+    ${ttsState === 'paused' ? 'bg-white/10' : ''}
+    ${ttsState === 'idle' ? 'hover:bg-white/10' : ''}
+  `;
+
+  return (
+    <button
+      onClick={onClick}
+      className={buttonClasses}
+      title={titleMap[ttsState]}
+      disabled={isLoading}
+      aria-label={titleMap[ttsState]}
+    >
+      {/* Background track */}
+      <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="17" fill="none" className="stroke-current opacity-20" strokeWidth="1.5"></circle>
+      </svg>
+      
+      {/* Loading animation */}
+      {isLoading && (
+        <svg className="absolute top-0 left-0 w-full h-full animate-spin-slow" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+          <defs>
+            <linearGradient id="tts-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#6366f1" />
+            </linearGradient>
+          </defs>
+          <circle 
+            cx="18" cy="18" r="17" fill="none" 
+            stroke="url(#tts-gradient)" strokeWidth="2"
+            strokeDasharray="80 120"
+            strokeLinecap="round"
+          ></circle>
+        </svg>
+      )}
+
+      {/* Icon */}
+      <div className="z-10 transition-transform duration-200 group-hover:scale-110">
+        {iconMap[ttsState]}
+      </div>
+    </button>
+  );
+};
+
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSuggestionClick, tts }) => {
   const isUser = message.role === 'user';
   const isError = message.role === 'error';
-  const { ttsState, activeMessageId, start, stop, audioProgress, audioDuration, seekAudio } = tts;
+  const { ttsState, activeMessageId, start, stop } = tts;
 
   const handleTTSClick = () => {
     if (typeof message.content === 'string') {
-        // Simplified logic: the useTTS hook now handles play/pause/stop internally.
         start(message.content, message.id);
     }
   };
   
-  const isTtsActive = activeMessageId === message.id;
   const isTtsEligible = !isUser && !isError && typeof message.content === 'string' && message.content.length > 20;
 
   const UserAvatar = () => (
@@ -86,17 +133,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            code({ node, inline, className, children, ...props }) {
+            // FIX: Resolved type errors by removing the invalid spread of `...props` onto SyntaxHighlighter
+            // and casting the `style` prop to `any` to work around a library type mismatch.
+            // FIX: The `inline` property is passed by react-markdown but not included in its inferred type for component props,
+            // causing a TypeScript error. Changed the signature to accept a generic `props` object and access `inline` dynamically.
+            code(props) {
+              const { node, className, children } = props;
+              const inline = (props as any).inline;
               const match = /language-(\w+)/.exec(className || '');
               const codeString = String(children).replace(/\n$/, '');
               return !inline && match ? (
-                <div className="relative my-4 rounded-lg bg-[#1e1e1e] border border-gray-700/50 shadow-lg overflow-hidden font-mono text-sm">
+                <div className="relative my-4 rounded-lg bg-[#1e1e1e] border border-gray-700/50 shadow-lg overflow-hidden font-mono text-sm group">
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-800/60 border-b border-gray-700/50">
                     <span className="font-sans text-gray-300 uppercase tracking-wider text-xs">{match[1]}</span>
-                    <CopyCodeButton code={codeString} />
+                    <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <CodeExecution language={match[1]} code={codeString} />
+                      <CopyCodeButton code={codeString} />
+                    </div>
                   </div>
                   <SyntaxHighlighter
-                    style={vscDarkPlus}
+                    style={vscDarkPlus as any}
                     language={match[1]}
                     PreTag="div"
                     showLineNumbers={true}
@@ -120,13 +176,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
                         paddingRight: '1rem'
                       }
                     }}
-                    {...props}
                   >
                     {codeString}
                   </SyntaxHighlighter>
                 </div>
               ) : (
-                <code className="px-1.5 py-1 bg-gray-700/70 rounded-md font-mono text-[0.9em]" {...props}>
+                <code className="px-1.5 py-1 bg-gray-700/70 rounded-md font-mono text-[0.9em]">
                     {children}
                 </code>
               );
@@ -167,56 +222,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
   
   const TtsControls = () => {
     if (!isTtsEligible) return null;
-  
-    return isTtsActive ? (
-      <div className="flex items-center gap-3 w-full max-w-xs animate-fade-in-sm">
-        <button
-          onClick={handleTTSClick}
-          className="relative flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary hover:bg-primary-hover text-white transition-transform transform hover:scale-105 active:scale-95"
-        >
-          {ttsState === 'loading' && <Icons.Spinner className="w-4 h-4" />}
-          {(ttsState === 'playing' || ttsState === 'paused') && (
-            <>
-              <CircularProgress progress={audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0} size={32} strokeWidth={2.5} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                {ttsState === 'playing' && <Icons.Pause className="w-4 h-4" />}
-                {ttsState === 'paused' && <Icons.Play className="w-4 h-4" />}
-              </div>
-            </>
-          )}
-        </button>
-        <div className="flex-grow">
-          <input
-            type="range"
-            className="tts-progress"
-            min="0"
-            max={audioDuration || 1}
-            value={audioProgress}
-            onChange={(e) => seekAudio(parseFloat(e.target.value))}
-            disabled={ttsState === 'loading'}
-            aria-label="Audio progress"
-          />
-          <div className="flex justify-between text-gray-400 text-xs font-mono tabular-nums mt-1">
-            <span>{formatTime(audioProgress)}</span>
-            <span>{formatTime(audioDuration)}</span>
-          </div>
-        </div>
-        <button
-          onClick={stop}
-          className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all transform hover:scale-110 active:scale-95"
-          title="Stop player"
-        >
-          <Icons.Close className="w-4 h-4" />
-        </button>
-      </div>
-    ) : (
-      <button
+    const effectiveTtsState = activeMessageId === message.id ? ttsState : 'idle';
+    return (
+      <TtsPlayerButton
+        ttsState={effectiveTtsState}
         onClick={handleTTSClick}
-        className="flex items-center rounded-full p-2 -m-2 text-gray-400 hover:text-white hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95"
-        title="Play audio"
-      >
-        <Icons.Play className="w-4 h-4" />
-      </button>
+      />
     );
   };
 
@@ -265,7 +276,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, user, onSugge
           )}
         </div>
 
-        <div className="text-xs text-gray-500 mt-1 px-1 flex items-center gap-4">
+        <div className="text-xs text-gray-500 mt-1 px-1 flex items-center gap-2">
           <span>{formatTimestamp(message.timestamp)}</span>
           <TtsControls />
         </div>

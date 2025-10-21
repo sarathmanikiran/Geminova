@@ -1,7 +1,3 @@
-
-
-
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 // Fix: Import GroundingChunk to use the correct type definition for sanitizing API responses.
@@ -63,6 +59,15 @@ const useChatManager = (user: User | null) => {
     }, []);
 
     const createNewChat = useCallback(() => {
+        const existingEmptyChat = chats.find(
+          (chat) => chat.title === 'New Chat' && chat.messages.length === 0
+        );
+    
+        if (existingEmptyChat) {
+          setCurrentChatId(existingEmptyChat.id);
+          return existingEmptyChat;
+        }
+
         const newChat: ChatSession = {
             id: uuidv4(),
             title: 'New Chat',
@@ -74,7 +79,7 @@ const useChatManager = (user: User | null) => {
         setChats(prev => [newChat, ...prev]);
         setCurrentChatId(newChat.id);
         return newChat;
-    }, []);
+    }, [chats]);
 
     const selectChat = useCallback((chatId: string) => {
         setCurrentChatId(chatId);
@@ -155,6 +160,11 @@ const useChatManager = (user: User | null) => {
                 );
             }
             
+            // If the stream finishes but we received no text, treat it as an error.
+            if (!fullResponseText.trim()) {
+                throw new Error("The AI returned an empty response. Please try again.");
+            }
+
             const { cleanedText, suggestions } = parseResponse(fullResponseText);
             
             // Fix: The GroundingChunk type from the Gemini API has optional properties, while the app's internal type

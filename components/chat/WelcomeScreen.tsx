@@ -19,7 +19,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartTask, onGenerateIm
 
   const handleTaskClick = (task: typeof tasks[0]) => {
     if (task.isGenerator) {
-      showToast("Image generation is coming soon!", 'info');
+      onGenerateImageClick();
     } else {
       onStartTask(task.prompt, task.useSearch);
     }

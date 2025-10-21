@@ -51,7 +51,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ user, chatManager, onToggleS
 
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-900 animate-fade-in">
+    <div className="flex flex-col h-full w-full bg-black animate-fade-in">
       <ChatHeader
         currentChat={currentChat}
         onToggleSidebar={onToggleSidebar}

@@ -8,12 +8,9 @@ type TTSState = 'idle' | 'loading' | 'playing' | 'paused';
 export const useTTS = () => {
     const [ttsState, setTtsState] = useState<TTSState>('idle');
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-    const [audioProgress, setAudioProgress] = useState(0);
-    const [audioDuration, setAudioDuration] = useState(0);
     const { showToast } = useToast();
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const progressIntervalRef = useRef<number | null>(null);
     const activeRequestRef = useRef<string | null>(null);
 
     const cleanup = useCallback(() => {
@@ -26,14 +23,8 @@ export const useTTS = () => {
             audioRef.current.src = '';
             audioRef.current = null;
         }
-        if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current);
-            progressIntervalRef.current = null;
-        }
         setTtsState('idle');
         setActiveMessageId(null);
-        setAudioProgress(0);
-        setAudioDuration(0);
     }, []);
 
     const stop = useCallback(() => {
@@ -41,19 +32,28 @@ export const useTTS = () => {
     }, [cleanup]);
 
     const start = useCallback(async (text: string, messageId: string) => {
+        // --- Play/Pause Toggle Logic ---
         if (ttsState !== 'idle' && activeMessageId === messageId) {
             if (audioRef.current) {
                 if (ttsState === 'playing') {
                     audioRef.current.pause();
                     setTtsState('paused');
                 } else if (ttsState === 'paused') {
-                    audioRef.current.play();
-                    setTtsState('playing');
+                    try {
+                        await audioRef.current.play();
+                        setTtsState('playing');
+                    } catch (error) {
+                        console.error('Failed to resume playback:', error);
+                        showToast("Could not resume audio.", 'error');
+                        cleanup();
+                    }
                 }
             }
             return;
         }
 
+        // --- New TTS Request Logic ---
+        // Clean up any existing audio before starting a new one.
         cleanup();
         
         activeRequestRef.current = messageId;
@@ -63,10 +63,9 @@ export const useTTS = () => {
         try {
             const audioB64 = await GeminiService.textToSpeech(text);
             
-            // If another request started while this one was in-flight, abandon this one.
+            // If another request started while this one was fetching, abandon this one.
             if (activeRequestRef.current !== messageId) return;
 
-            // Handle the case where the API call succeeds but returns no audio data.
             if (!audioB64) {
                 console.error("TTS Error: The API returned no audio data.");
                 showToast("Could not generate audio for this message.", 'error');
@@ -80,58 +79,52 @@ export const useTTS = () => {
 
             audioRef.current = new Audio(audioUrl);
             
-            audioRef.current.onerror = () => {
-                if (activeRequestRef.current === messageId) {
-                    showToast("An error occurred during audio playback.", 'error');
-                    cleanup();
-                }
-            };
-            
-            audioRef.current.play();
-            setTtsState('playing');
-
-            audioRef.current.onloadedmetadata = () => {
-                if (audioRef.current && activeRequestRef.current === messageId) {
-                     setAudioDuration(audioRef.current.duration);
-                }
-            };
-
             audioRef.current.onended = () => {
                 if (activeRequestRef.current === messageId) {
                     cleanup();
                 }
             };
-
-            progressIntervalRef.current = window.setInterval(() => {
-                if (audioRef.current && activeRequestRef.current === messageId) {
-                    setAudioProgress(audioRef.current.currentTime);
+            
+            // Asynchronously play the audio and handle potential interruptions.
+            try {
+                await audioRef.current.play();
+                // After play() resolves, check if this is still the active request.
+                if (activeRequestRef.current === messageId) {
+                    setTtsState('playing');
+                } else {
+                    // A new request was started while this one was trying to play.
+                    // The cleanup for this instance is likely handled by the new request's `cleanup()` call.
                 }
-            }, 100);
+            } catch (error: any) {
+                // This catches the "The play() request was interrupted..." error.
+                if (error.name === 'AbortError') {
+                    // This is expected if the user clicks another button quickly. No user-facing error needed.
+                    console.log('TTS playback was interrupted by a new request.');
+                } else {
+                    console.error("TTS playback failed:", error);
+                    if (activeRequestRef.current === messageId) {
+                        showToast("An error occurred during audio playback.", 'error');
+                        cleanup();
+                    }
+                }
+            }
 
         } catch (error) {
             console.error("TTS service call failed:", error);
             if (activeRequestRef.current === messageId) {
-                // This catches failures in the GeminiService.textToSpeech call itself (e.g., network error).
                 showToast("Failed to generate audio due to a service error.", 'error');
                 cleanup();
             }
         }
     }, [ttsState, activeMessageId, cleanup, showToast]);
     
-    const seekAudio = useCallback((newTime: number) => {
-        if (audioRef.current && isFinite(newTime)) {
-            audioRef.current.currentTime = newTime;
-            setAudioProgress(newTime);
-        }
-    }, []);
 
     useEffect(() => {
+        // Ensure cleanup happens on component unmount.
         return () => {
             cleanup();
         };
     }, [cleanup]);
     
-    const isAudioPaused = ttsState === 'paused';
-
-    return { ttsState, activeMessageId, start, stop, isAudioPaused, audioProgress, audioDuration, seekAudio };
+    return { ttsState, activeMessageId, start, stop };
 };

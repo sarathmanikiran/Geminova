@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import { Icons } from './Icons';
