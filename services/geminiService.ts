@@ -5,6 +5,7 @@ import { parseApiError } from "../utils/errorUtils";
 
 // FIX: Corrected the type of the `ai` variable to `GoogleGenAI | undefined` to resolve the TypeScript error
 // where a value was being used as a type. The hardcoded API key was also removed to comply with guidelines.
+let API_KEY="AIzaSyDgahQH9HYqADQtld7q4O5vdvxAHsqa8rQ";
 let ai: GoogleGenAI | undefined;
 
 // Lazy-initialization of the Gemini client.
@@ -15,7 +16,7 @@ const getAiClient = (): GoogleGenAI => {
         return ai;
     }
     // FIX: The API key must be obtained from `process.env.API_KEY` as per the guidelines.
-    const apiKey = process.env.API_KEY;
+    const apiKey = API_KEY;
     if (!apiKey) {
         // This error will be caught by the chat manager and displayed in the chat window.
         throw new Error("API key not configured. Cannot connect to Gemini service.");
