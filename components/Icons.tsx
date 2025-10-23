@@ -182,4 +182,14 @@ export const Icons = {
       <line x1="12" y1="19" x2="20" y2="19" />
     </svg>
   ),
+  Pin: (props: SVGProps) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="12" y1="17" x2="12" y2="22"></line>
+        <path d="M5 17h14v-1a7 7 0 0 0-7-7 7 7 0 0 0-7 7v1z"></path>
+        <path d="M12 9V2"></path>
+    </svg>
+  ),
+  MoreHorizontal: (props: SVGProps) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+  ),
 };

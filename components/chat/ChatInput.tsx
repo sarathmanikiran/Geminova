@@ -21,7 +21,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   createNewChat,
 }) => {
   const [input, setInput] = useState('');
-  const { isListening, transcript, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition();
+  const { isListening, transcript, error: speechError, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition();
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -29,10 +29,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [attachedFile, setAttachedFile] = useState<Attachment | null>(null);
   const { showToast } = useToast();
   
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isFlashing, setIsFlashing] = useState(false);
   const [cameraError, setCameraError] = useState<'permission-denied' | 'not-found' | 'other' | null>(null);
-  const [cameraRetryKey, setCameraRetryKey] = useState(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,6 +58,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   }, [transcript]);
 
+  // Effect to handle speech recognition errors and provide user feedback.
+  useEffect(() => {
+    if (speechError) {
+      // The speech recognition API automatically stops on error, so we just need to inform the user.
+      if (speechError.includes('no-speech')) {
+        showToast("I didn't catch that. Please try again.", 'info');
+      } else if (speechError.includes('not-allowed')) {
+        showToast("Microphone access is required for voice input.", 'error');
+      } else {
+        console.error(`Unhandled speech recognition error: ${speechError}`);
+        showToast("An issue occurred with speech recognition.", 'error');
+      }
+    }
+  }, [speechError, showToast]);
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -71,8 +83,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Effect to reset camera state when modal closes
   useEffect(() => {
     if (!isCameraModalOpen) {
-      setCountdown(null);
-      setIsFlashing(false);
       setCameraError(null);
     }
   }, [isCameraModalOpen]);
@@ -179,34 +189,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [webcamRef]);
 
   const handleCaptureClick = useCallback(() => {
-    if (countdown === null) {
-      setCountdown(3);
-    }
-  }, [countdown]);
-  
-  // Effect to run the countdown timer
-  useEffect(() => {
-    if (countdown !== null && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0) {
-      // Flash and capture
-      setIsFlashing(true);
-      setTimeout(() => setIsFlashing(false), 300); // match flash animation duration
-      captureAndClose();
-      setCountdown(null); // Reset countdown
-    }
-  }, [countdown, captureAndClose]);
+    captureAndClose();
+  }, [captureAndClose]);
 
   const toggleCamera = useCallback(() => {
     setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
   }, []);
 
-  const handleCameraError = useCallback((error: string | Error) => {
+  // FIX: Made the camera error handler more robust. It now checks if the error object is null
+  // or undefined before trying to access its properties. This prevents a potential crash if the
+  // webcam library calls `onUserMediaError` with an empty value, which would trigger the
+  // application's main error boundary.
+  const handleCameraError = useCallback((error: string | Error | null | undefined) => {
+    if (!error) {
+      console.error("Camera Error: An unknown or null error was received.");
+      setCameraError("other");
+      return;
+    }
+
     const errorName = typeof error === 'string' ? error : error.name;
     console.error("Camera Error:", errorName, typeof error !== 'string' ? error.message : '');
+
     if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError") {
       setCameraError("permission-denied");
     } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
@@ -214,11 +217,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
     } else {
       setCameraError("other");
     }
-  }, []);
-
-  const retryCameraAccess = useCallback(() => {
-    setCameraError(null);
-    setCameraRetryKey(prevKey => prevKey + 1);
   }, []);
   
   return (
@@ -333,12 +331,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       {isCameraModalOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-fade-in p-4" onClick={() => countdown === null && setIsCameraModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-fade-in p-4" onClick={() => setIsCameraModalOpen(false)}>
           <div className="bg-gray-900 rounded-lg border border-glass-border w-full max-w-3xl shadow-glow-primary flex flex-col overflow-hidden animate-modal-in" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex justify-between items-center p-3 border-b border-glass-border bg-black/30">
               <h3 className="text-lg font-semibold flex items-center gap-2"><Icons.Camera className="w-5 h-5 text-red-400"/> Camera Capture</h3>
-              <button onClick={() => setIsCameraModalOpen(false)} disabled={countdown !== null} className="p-1.5 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Close camera">
+              <button onClick={() => setIsCameraModalOpen(false)} className="p-1.5 rounded-full hover:bg-white/10 transition-all transform hover:scale-110 active:scale-95" aria-label="Close camera">
                 <Icons.Close className="w-5 h-5" />
               </button>
             </div>
@@ -351,14 +349,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   {cameraError === 'permission-denied' ? (
                     <>
                       <h4 className="font-semibold text-lg text-white mb-2">Camera Access Denied</h4>
-                      <p className="text-red-300 max-w-sm mb-4">Geminova needs your permission to use the camera. Please allow access when prompted.</p>
-                      <button
-                        onClick={retryCameraAccess}
-                        className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-all transform hover:scale-105 active:scale-95"
-                      >
-                        Try Again
-                      </button>
-                      <p className="text-xs text-gray-500 mt-3 max-w-sm">If you don't see a prompt, you may need to manually grant camera permissions for this site in your browser's settings.</p>
+                      <p className="text-red-300 max-w-md mb-4">You have blocked camera access for Geminova. To use this feature, please grant permission in your browser's site settings.</p>
+                      <p className="text-xs text-gray-500 max-w-md">You can usually find this by clicking the lock icon (🔒) in the address bar. After allowing access, you may need to close this dialog and try again.</p>
                     </>
                   ) : cameraError === 'not-found' ? (
                     <>
@@ -380,26 +372,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     screenshotFormat="image/jpeg"
                     videoConstraints={{ width: 1280, height: 720, facingMode }}
                     className="rounded-md w-full h-auto aspect-video"
-                    key={cameraRetryKey}
                     onUserMediaError={handleCameraError}
                   />
-                  {/* Countdown Overlay */}
-                  {countdown !== null && countdown > 0 && (
-                    <div key={countdown} className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                        <span className="text-9xl font-bold text-white drop-shadow-lg animate-countdown-pop">{countdown}</span>
-                    </div>
-                  )}
-
-                  {/* Flash Effect */}
-                  {isFlashing && (
-                      <div className="absolute inset-0 bg-white animate-flash-out pointer-events-none" />
-                  )}
-                  
                   <div className="absolute bottom-4 w-full px-4 flex items-center justify-between">
                     <button 
                       onClick={() => setIsCameraModalOpen(false)}
-                      disabled={countdown !== null}
-                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white transition-transform transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white transition-transform transform hover:scale-105 active:scale-95" 
                       aria-label="Close Camera" 
                       title="Close Camera"
                     >
@@ -407,16 +385,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </button>
                     <button 
                       onClick={handleCaptureClick} 
-                      disabled={countdown !== null}
-                      className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-glow-primary transition-transform transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none" 
+                      className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-glow-primary transition-transform transform hover:scale-105 active:scale-95" 
                       aria-label="Capture photo"
                     >
-                       <div className={`w-14 h-14 rounded-full bg-white border-2 border-black transition-all ${countdown !== null ? 'animate-pulse' : ''}`} />
+                       <div className="w-14 h-14 rounded-full bg-white border-2 border-black transition-all" />
                     </button>
                     <button 
                       onClick={toggleCamera} 
-                      disabled={countdown !== null}
-                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white transition-transform transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
+                      className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white transition-transform transform hover:scale-105 active:scale-95" 
                       aria-label="Switch camera" 
                       title="Switch Camera"
                     >

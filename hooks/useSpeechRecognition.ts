@@ -97,6 +97,7 @@ export const useSpeechRecognition = () => {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening && !isTransitioningRef.current) {
       isTransitioningRef.current = true;
+      setError(null); // Clear previous errors on a new attempt.
       setTranscript(''); // Clear previous transcript before starting
       finalTranscriptRef.current = ''; // Reset the ref on start
       try {

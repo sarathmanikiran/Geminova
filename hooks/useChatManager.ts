@@ -15,12 +15,19 @@ const useChatManager = (user: User | null) => {
 
     const storageKey = useMemo(() => user ? `geminova_chats_${user.id}` : null, [user]);
 
+    const chatSort = (a: ChatSession, b: ChatSession) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return b.createdAt - a.createdAt;
+    };
+
     useEffect(() => {
         if (storageKey) {
             try {
                 const storedChats = localStorage.getItem(storageKey);
                 if (storedChats) {
                     const parsedChats: ChatSession[] = JSON.parse(storedChats);
+                    parsedChats.sort(chatSort);
                     setChats(parsedChats);
                     if (parsedChats.length > 0 && !currentChatId) {
                         setCurrentChatId(parsedChats[0].id);
@@ -75,6 +82,7 @@ const useChatManager = (user: User | null) => {
             createdAt: Date.now(),
             personality: 'friendly',
             useGoogleSearch: false,
+            pinned: false,
         };
         setChats(prev => [newChat, ...prev]);
         setCurrentChatId(newChat.id);
@@ -237,6 +245,19 @@ const useChatManager = (user: User | null) => {
         addMessageToChat('edited-image', { editedImageUrl, description });
     }, [addMessageToChat]);
 
+    const renameChat = useCallback((chatId: string, newTitle: string) => {
+        setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
+    }, []);
+
+    const togglePinChat = useCallback((chatId: string) => {
+        setChats(prev => {
+            const toggled = prev.map(c => c.id === chatId ? { ...c, pinned: !(c.pinned ?? false) } : c);
+            toggled.sort(chatSort);
+            return toggled;
+        });
+    }, []);
+
+
     return {
         chats,
         setChats,
@@ -252,6 +273,8 @@ const useChatManager = (user: User | null) => {
         clearAllChats,
         addImageToChat,
         addImageEditResultToChat,
+        renameChat,
+        togglePinChat,
     };
 };
 

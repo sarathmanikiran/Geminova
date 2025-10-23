@@ -59,6 +59,7 @@ export interface ChatSession {
   createdAt: number;
   personality: AIPersonality;
   useGoogleSearch: boolean;
+  pinned?: boolean;
 }
 
 export interface User {

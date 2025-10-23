@@ -1,6 +1,6 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, ChatSession } from '../../types';
 import { Icons } from '../Icons';
 import useChatManager from '../../hooks/useChatManager';
@@ -19,15 +19,50 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebarOpen, onToggleSidebar, updateUser }) => {
-  const { chats, currentChat, createNewChat, selectChat, deleteChat, clearAllChats } = chatManager;
+  const { chats, currentChat, createNewChat, selectChat, deleteChat, clearAllChats, renameChat, togglePinChat } = chatManager;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<ChatSession | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+
+  const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ chat: ChatSession, top: number } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  
   const { showToast } = useToast();
 
-  const handleDeleteClick = (e: React.MouseEvent, chat: ChatSession) => {
-    e.stopPropagation();
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleRenameStart = (chat: ChatSession) => {
+    setRenamingChatId(chat.id);
+    setRenameValue(chat.title);
+    setContextMenu(null);
+  };
+
+  const handleRenameSubmit = () => {
+    if (renamingChatId && renameValue.trim()) {
+      renameChat(renamingChatId, renameValue.trim());
+      showToast('Chat renamed', 'success');
+    }
+    setRenamingChatId(null);
+  };
+  
+  const handlePinToggle = (chat: ChatSession) => {
+    togglePinChat(chat.id);
+    setContextMenu(null);
+  };
+
+  const handleDeleteClick = (chat: ChatSession) => {
+    setContextMenu(null);
     setChatToDelete(chat);
     setIsDeleteDialogOpen(true);
   };
@@ -56,6 +91,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
       </div>
     )
   );
+  
+  const handleContextMenu = (e: React.MouseEvent, chat: ChatSession) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setContextMenu({ chat, top: rect.top });
+  };
+
 
   return (
     <>
@@ -79,22 +122,55 @@ const Sidebar: React.FC<SidebarProps> = ({ user, signOut, chatManager, isSidebar
 
         <nav className="flex-1 overflow-y-auto p-2 space-y-1 border-t border-glass-border">
           {chats.map(chat => (
-            <button
-              key={chat.id}
-              onClick={() => selectChat(chat.id)}
-              className={`w-full text-left p-2 rounded-md text-sm truncate flex justify-between items-center group transition-all transform hover:scale-[1.01] active:scale-95 ${
-                currentChat?.id === chat.id ? 'bg-purple-600/50 shadow-glow-primary' : 'hover:bg-white/10'
-              }`}
-            >
-              <span className="flex-1 truncate pr-2">{chat.title}</span>
-              <span 
-                onClick={(e) => handleDeleteClick(e, chat)}
-                className="opacity-0 group-hover:opacity-100 transition-all transform hover:scale-125 text-gray-400 hover:text-red-400 p-1"
-              >
-                  <Icons.Trash className="w-4 h-4" />
-              </span>
-            </button>
+            <div key={chat.id} className="relative group">
+              {renamingChatId === chat.id ? (
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={handleRenameSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRenameSubmit();
+                    if (e.key === 'Escape') setRenamingChatId(null);
+                  }}
+                  className="w-full text-left p-2 rounded-md text-sm truncate bg-gray-700 border border-primary focus:ring-1 focus:ring-primary outline-none"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => selectChat(chat.id)}
+                  className={`w-full text-left p-2 rounded-md text-sm truncate flex justify-between items-center transition-all transform hover:scale-[1.01] active:scale-95 ${
+                    currentChat?.id === chat.id ? 'bg-purple-600/50 shadow-glow-primary' : 'hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1 truncate">
+                    {chat.pinned && <Icons.Pin className="w-4 h-4 text-purple-300 flex-shrink-0" fill="currentColor" />}
+                    <span className="truncate">{chat.title}</span>
+                  </div>
+                  <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleContextMenu(e, chat)}
+                      className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10"
+                    >
+                      <Icons.MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </button>
+              )}
+            </div>
           ))}
+          {contextMenu && (
+             <div
+                ref={contextMenuRef}
+                style={{ top: `${contextMenu.top}px` }}
+                className="absolute left-64 z-30 w-40 bg-gray-800 border border-glass-border rounded-lg shadow-xl animate-menu-in p-1"
+             >
+                <button onClick={() => handleRenameStart(contextMenu.chat)} className="w-full flex items-center gap-2 text-left p-2 text-sm rounded-md hover:bg-white/10"><Icons.Edit className="w-4 h-4" /> Rename</button>
+                <button onClick={() => handlePinToggle(contextMenu.chat)} className="w-full flex items-center gap-2 text-left p-2 text-sm rounded-md hover:bg-white/10"><Icons.Pin className="w-4 h-4" /> {contextMenu.chat.pinned ? 'Unpin' : 'Pin'}</button>
+                <div className="my-1 h-px bg-glass-border"></div>
+                <button onClick={() => handleDeleteClick(contextMenu.chat)} className="w-full flex items-center gap-2 text-left p-2 text-sm rounded-md text-red-400 hover:bg-red-500/20"><Icons.Trash className="w-4 h-4" /> Delete</button>
+             </div>
+          )}
         </nav>
         
         <div className="p-4 border-t border-glass-border mt-auto space-y-2">
